@@ -1,10 +1,103 @@
 import { useState } from 'react';
-import { Header } from '../components/Header';
-import { ArrowLeftIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowLeftIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, StoreIcon, ShoppingCartIcon } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+
 export function ProductDetail() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // Get outlet name from localStorage
+  const outlet = JSON.parse(localStorage.getItem('outlet') || '{}');
+  const outletName = outlet.name || 'Nama Outlet';
+
+  // Check if this is seller view (URL starts with /seller/)
+  const isSellerView = window.location.pathname.startsWith('/seller/');
+  
+  // TODO: Fetch product data based on id
+  console.log('Product ID:', id);
+
+  // Product data (nanti akan diambil dari API berdasarkan id)
+  const productData = {
+    name: 'Topeng Reog Handmade Premium',
+    price: 'Rp 850.000',
+    category: 'Topeng',
+    condition: 'Baru',
+    stock: 12,
+    material: 'Kayu Mahoni',
+    size: '35 x 40 cm',
+    weight: '2 kg',
+    origin: 'Ponorogo, Jawa Timur',
+    description: 'Topeng Reog handmade premium dengan kualitas terbaik. Dibuat oleh pengrajin berpengalaman dengan detail yang sangat teliti. Cocok untuk koleksi atau pertunjukan seni.'
+  };
+
+  // WhatsApp configuration
+  const whatsappNumber = '6285136994744'; // Format: country code + number (no + or spaces)
+  
+  const handleWhatsAppContact = () => {
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    
+    if (!isLoggedIn) {
+      setShowLoginPrompt(true);
+      return;
+    }
+
+    const message = `Halo, saya tertarik dengan produk berikut:\n\n` +
+                   `*${productData.name}*\n` +
+                   `Harga: ${productData.price}\n` +
+                   `Kategori: ${productData.category}\n` +
+                   `Material: ${productData.material}\n` +
+                   `Ukuran: ${productData.size}\n\n` +
+                   `Apakah produk ini masih tersedia?`;
+    
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleAddToCart = () => {
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    
+    if (!isLoggedIn) {
+      setShowLoginPrompt(true);
+      return;
+    }
+
+    // Get existing cart from localStorage
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '{"products": [], "events": []}');
+    
+    // Add product to cart
+    const cartItem = {
+      id: id || '1',
+      type: 'product',
+      image: productImages[0],
+      title: productData.name,
+      price: productData.price,
+      priceNumber: 850000, // Nanti diambil dari backend
+      quantity: 1,
+      category: productData.category,
+      seller: outletName
+    };
+
+    // Check if product already exists in cart
+    const existingIndex = existingCart.products.findIndex((item: any) => item.id === cartItem.id);
+    
+    if (existingIndex >= 0) {
+      // Increment quantity if exists
+      existingCart.products[existingIndex].quantity += 1;
+    } else {
+      // Add new item
+      existingCart.products.push(cartItem);
+    }
+
+    // Save to localStorage
+    localStorage.setItem('cart', JSON.stringify(existingCart));
+    
+    // Show notification or navigate to cart
+    alert('Produk berhasil ditambahkan ke keranjang!');
+  };
 
   // Array of product images
   const productImages = [
@@ -22,6 +115,40 @@ export function ProductDetail() {
     setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
   };
   return <div className="min-h-screen bg-gray-50">
+      {/* Login Prompt Popup */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-[slideIn_0.3s_ease-out]">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#E97DB4] to-[#C75B8A] rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingCartIcon className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Login Diperlukan
+              </h3>
+              <p className="text-gray-600 text-sm">
+                Anda harus login terlebih dahulu untuk menambahkan produk ke keranjang atau menghubungi penjual
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full bg-gradient-to-r from-[#4A9B9B] to-[#3a8080] text-white py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+              >
+                Login Sekarang
+              </button>
+              <button
+                onClick={() => setShowLoginPrompt(false)}
+                className="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-all"
+              >
+                Nanti Saja
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center px-4 py-3">
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
@@ -91,15 +218,13 @@ export function ProductDetail() {
 
         <div className="px-4 py-6">
           <h2 className="text-xl font-bold text-gray-800 mb-2">
-            Topeng Reog Handmade Premium
+            {productData.name}
           </h2>
-          <p className="text-2xl font-bold text-[#800000] mb-4">Rp 850.000</p>
+          <p className="text-2xl font-bold text-[#800000] mb-4">{productData.price}</p>
           <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
             <h3 className="font-semibold text-gray-800 mb-2">Deskripsi</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
-              Topeng Reog handmade premium dengan kualitas terbaik. Dibuat oleh
-              pengrajin berpengalaman dengan detail yang sangat teliti. Cocok
-              untuk koleksi atau pertunjukan seni.
+              {productData.description}
             </p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4">
@@ -108,52 +233,78 @@ export function ProductDetail() {
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
+                <span className="text-gray-600">Penjual</span>
+                <span className="font-medium flex items-center gap-1">
+                  <StoreIcon className="w-3 h-3 text-[#5B7B6F]" />
+                  {outletName}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-gray-600">Kondisi</span>
-                <span className="font-medium">Baru</span>
+                <span className="font-medium">{productData.condition}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Stok</span>
-                <span className="font-medium">12 unit</span>
+                <span className="font-medium">{productData.stock} unit</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Kategori</span>
-                <span className="font-medium">Topeng</span>
+                <span className="font-medium">{productData.category}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Material</span>
-                <span className="font-medium">Kayu Mahoni</span>
+                <span className="font-medium">{productData.material}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Ukuran</span>
-                <span className="font-medium">35 x 40 cm</span>
+                <span className="font-medium">{productData.size}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Berat</span>
-                <span className="font-medium">2 kg</span>
+                <span className="font-medium">{productData.weight}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Asal</span>
-                <span className="font-medium">Ponorogo, Jawa Timur</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Estimasi Produksi</span>
-                <span className="font-medium">7-14 hari</span>
+                <span className="font-medium">{productData.origin}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-30">
-        <div className="flex gap-3">
-          <button className="flex-1 bg-[#E97DB4] text-white py-3 rounded-lg font-semibold hover:bg-[#d66b9f] transition-colors flex items-center justify-center gap-2">
-            <EditIcon className="w-5 h-5" />
-            Edit
-          </button>
-          <button className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
-            <TrashIcon className="w-5 h-5" />
-            Hapus
-          </button>
-        </div>
+        {isSellerView ? (
+          <div className="flex gap-3">
+            <button className="flex-1 bg-[#E97DB4] text-white py-3 rounded-lg font-semibold hover:bg-[#d66b9f] transition-colors flex items-center justify-center gap-2">
+              <EditIcon className="w-5 h-5" />
+              Edit
+            </button>
+            <button className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
+              <TrashIcon className="w-5 h-5" />
+              Hapus
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              <button 
+                onClick={handleAddToCart}
+                className="flex-1 bg-gradient-to-r from-[#E97DB4] to-[#C75B8A] text-white py-3.5 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2"
+              >
+                <ShoppingCartIcon className="w-5 h-5" />
+                Keranjang
+              </button>
+              <button 
+                onClick={handleWhatsAppContact}
+                className="flex-1 bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white py-3.5 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>;
 }

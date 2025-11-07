@@ -105,13 +105,6 @@ export function EventDashboard() {
           </button>
         </div>
 
-        {/* Info Card */}
-        <div className="bg-[#4A9B9B]/10 rounded-2xl p-4 border border-[#4A9B9B]/20">
-          <p className="text-sm text-[#2E2557]">
-            <span className="font-semibold">💡 Tips:</span> Promosikan event Anda dengan foto yang menarik dan informasi yang lengkap!
-          </p>
-        </div>
-
         {/* Outlet Events Section */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">

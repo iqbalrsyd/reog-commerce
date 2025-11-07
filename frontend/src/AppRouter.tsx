@@ -5,8 +5,10 @@ import { Profile } from './pages/Profile';
 import { Cart } from './pages/Cart';
 import { Notifications } from './pages/Notifications';
 import { PurchaseHistory } from './pages/PurchaseHistory';
-import { SellerDashboard } from './pages/SellerDashboard';
+import { AccountInfo } from './pages/AccountInfo';
+import { Onboarding } from './pages/Onboarding';
 import { CreateOutlet } from './pages/CreateOutlet';
+import { SellerDashboard } from './pages/SellerDashboard';
 import { ProductDashboard } from './pages/ProductDashboard';
 import { EventDashboard } from './pages/EventDashboard';
 import { ProductList } from './pages/ProductList';
@@ -16,7 +18,6 @@ import { EventDetail } from './pages/EventDetail';
 import { AddProduct } from './pages/AddProduct';
 import { AddEvent } from './pages/AddEvent';
 import { Analytics } from './pages/Analytics';
-import { Gallery } from './pages/Gallery';
 export function AppRouter() {
   return <BrowserRouter>
       <Routes>
@@ -26,6 +27,14 @@ export function AppRouter() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/history" element={<PurchaseHistory />} />
+        <Route path="/account-info" element={<AccountInfo />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        
+        {/* Public Product & Event Routes */}
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/event/:id" element={<EventDetail />} />
+        
+        {/* Seller Routes */}
         <Route path="/create-outlet" element={<CreateOutlet />} />
         <Route path="/seller/dashboard" element={<SellerDashboard />} />
         <Route path="/product-dashboard" element={<ProductDashboard />} />
@@ -37,7 +46,6 @@ export function AppRouter() {
         <Route path="/seller/add-product" element={<AddProduct />} />
         <Route path="/seller/add-event" element={<AddEvent />} />
         <Route path="/seller/analytics" element={<Analytics />} />
-        <Route path="/seller/gallery" element={<Gallery />} />
       </Routes>
     </BrowserRouter>;
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BellIcon, ShoppingCartIcon, UserIcon, MenuIcon, SearchIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BellIcon, ShoppingCartIcon, UserIcon, MenuIcon, SearchIcon, StoreIcon, HomeIcon, PackageIcon, CalendarIcon, BarChartIcon, PlusCircleIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 interface HeaderProps {
   isSeller?: boolean;
@@ -11,22 +11,38 @@ export function Header({
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [outletType, setOutletType] = useState<string>('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get outlet type from localStorage
+    const outlet = localStorage.getItem('outlet');
+    if (outlet) {
+      const outletData = JSON.parse(outlet);
+      setOutletType(outletData.type || '');
+    }
+  }, []);
+
   const publicMenuItems = [{
     label: 'Beranda',
-    path: '/'
+    path: '/',
+    icon: HomeIcon
   }, {
     label: 'Riwayat Pembelian',
-    path: '/history'
+    path: '/history',
+    icon: PackageIcon
   }, {
     label: 'Notifikasi',
-    path: '/notifications'
+    path: '/notifications',
+    icon: BellIcon
   }, {
     label: 'Keranjang',
-    path: '/cart'
+    path: '/cart',
+    icon: ShoppingCartIcon
   }, {
     label: 'Profil',
-    path: '/profile'
+    path: '/profile',
+    icon: UserIcon
   }];
   const sellerMenuItems = [{
     label: 'Dashboard',
@@ -50,7 +66,81 @@ export function Header({
     label: 'Keluar',
     path: '/'
   }];
+
+  // Outlet menu items based on outlet type
+  const getOutletMenuItems = () => {
+    if (!outletType) return [];
+    
+    const baseItems = [
+      {
+        label: 'Beranda Outlet',
+        path: outletType === 'produk' ? '/product-dashboard' : '/event-dashboard',
+        icon: HomeIcon
+      },
+      {
+        label: 'Analitik',
+        path: '/analytics',
+        icon: BarChartIcon
+      }
+    ];
+
+    // Add product or event specific items
+    if (outletType === 'produk') {
+      baseItems.splice(1, 0, 
+        {
+          label: 'Produk',
+          path: '/product-dashboard',
+          icon: PackageIcon
+        },
+        {
+          label: 'Tambah Produk',
+          path: '/add-product',
+          icon: PlusCircleIcon
+        }
+      );
+    } else if (outletType === 'event') {
+      baseItems.splice(1, 0,
+        {
+          label: 'Event',
+          path: '/event-dashboard',
+          icon: CalendarIcon
+        },
+        {
+          label: 'Tambah Event',
+          path: '/add-event',
+          icon: PlusCircleIcon
+        }
+      );
+    } else if (outletType === 'keduanya') {
+      baseItems.splice(1, 0,
+        {
+          label: 'Produk',
+          path: '/product-dashboard',
+          icon: PackageIcon
+        },
+        {
+          label: 'Event',
+          path: '/event-dashboard',
+          icon: CalendarIcon
+        },
+        {
+          label: 'Tambah Produk',
+          path: '/add-product',
+          icon: PlusCircleIcon
+        },
+        {
+          label: 'Tambah Event',
+          path: '/add-event',
+          icon: PlusCircleIcon
+        }
+      );
+    }
+
+    return baseItems;
+  };
+
   const menuItems = isSeller ? sellerMenuItems : publicMenuItems;
+  const outletMenuItems = getOutletMenuItems();
   return <>
       <header className="sticky top-0 z-50 bg-[#E97DB4] shadow-lg">
         <div className="flex items-center justify-between px-4 py-3">
@@ -119,7 +209,7 @@ export function Header({
       </header>
       {isMenuOpen && <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMenuOpen(false)} />
-          <div className="fixed right-0 top-0 h-full w-72 bg-white shadow-2xl z-50 transform transition-transform">
+          <div className="fixed right-0 top-0 h-full w-72 bg-white shadow-2xl z-50 transform transition-transform overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-xl font-bold text-[#2E2557]">Menu</h2>
@@ -127,11 +217,52 @@ export function Header({
                   <MenuIcon className="w-5 h-5 text-[#2E2557]" />
                 </button>
               </div>
+
+              {/* Menu Utama */}
               <nav className="space-y-2">
-                {menuItems.map(item => <Link key={item.path} to={item.path} onClick={() => setIsMenuOpen(false)} className="block px-4 py-3 rounded-xl hover:bg-[#E97DB4] hover:text-white text-gray-700 transition-all font-medium">
-                    {item.label}
-                  </Link>)}
+                {menuItems.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <Link 
+                      key={item.path} 
+                      to={item.path} 
+                      onClick={() => setIsMenuOpen(false)} 
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#E97DB4] hover:text-white text-gray-700 transition-all font-medium group"
+                    >
+                      {Icon && <Icon className="w-4 h-4 text-[#E97DB4] group-hover:text-white" />}
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </nav>
+
+              {/* Menu Outlet - Only show if outlet exists */}
+              {outletMenuItems.length > 0 && (
+                <>
+                  <div className="my-6 border-t border-gray-200 pt-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <StoreIcon className="w-5 h-5 text-[#E97DB4]" />
+                      <h3 className="text-lg font-bold text-[#2E2557]">Menu Outlet</h3>
+                    </div>
+                    <nav className="space-y-2">
+                      {outletMenuItems.map(item => {
+                        const Icon = item.icon;
+                        return (
+                          <Link 
+                            key={item.path} 
+                            to={item.path} 
+                            onClick={() => setIsMenuOpen(false)} 
+                            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#4A9B9B] hover:text-white text-gray-700 transition-all font-medium group"
+                          >
+                            <Icon className="w-4 h-4 text-[#4A9B9B] group-hover:text-white" />
+                            <span>{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </>}

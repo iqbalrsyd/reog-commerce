@@ -122,13 +122,6 @@ export function ProductDashboard() {
           </button>
         </div>
 
-        {/* Info Card */}
-        <div className="bg-[#E97DB4]/10 rounded-2xl p-4 border border-[#E97DB4]/20">
-          <p className="text-sm text-[#2E2557]">
-            <span className="font-semibold">💡 Tips:</span> Tambahkan foto produk yang menarik dan deskripsi yang detail untuk meningkatkan penjualan!
-          </p>
-        </div>
-
         {/* Outlet Products Section */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">

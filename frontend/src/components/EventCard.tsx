@@ -1,6 +1,8 @@
 import { MapPinIcon, CalendarIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface EventCardProps {
+  id?: string | number;
   image: string;
   title: string;
   price: string;
@@ -9,14 +11,24 @@ interface EventCardProps {
 }
 
 export function EventCard({
+  id,
   image,
   title,
   price,
   location,
   date
 }: EventCardProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/event/${id || 1}`);
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all flex min-w-full">
+    <div 
+      onClick={handleClick}
+      className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all flex min-w-full cursor-pointer"
+    >
       <img 
         src={image} 
         alt={title} 

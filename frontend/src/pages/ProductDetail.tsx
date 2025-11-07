@@ -20,16 +20,16 @@ export function ProductDetail() {
 
   // Product data (nanti akan diambil dari API berdasarkan id)
   const productData = {
-    name: 'Topeng Reog Handmade Premium',
-    price: 'Rp 850.000',
+    name: 'Topeng Singa Barong Premium Ukir Kayu Mahoni',
+    price: 'Rp 3.200.000',
     category: 'Topeng',
     condition: 'Baru',
-    stock: 12,
-    material: 'Kayu Mahoni',
-    size: '35 x 40 cm',
-    weight: '2 kg',
-    origin: 'Ponorogo, Jawa Timur',
-    description: 'Topeng Reog handmade premium dengan kualitas terbaik. Dibuat oleh pengrajin berpengalaman dengan detail yang sangat teliti. Cocok untuk koleksi atau pertunjukan seni.'
+    stock: 8,
+    material: 'Kayu Mahoni Pilihan',
+    size: '40 x 50 cm (Panjang x Lebar)',
+    weight: '3.5 kg',
+    origin: 'Desa Setono, Jenangan, Ponorogo',
+    description: 'Topeng Singa Barong adalah elemen paling ikonik dalam kesenian Reog Ponorogo. Topeng ini dibuat oleh pengrajin ahli dari Desa Setono yang telah mewarisi keahlian turun-temurun selama puluhan tahun. Diukir dari kayu mahoni pilihan dengan detail yang sangat teliti, topeng ini menggambarkan wajah singa yang gagah dengan ekspresi yang kuat. Dilengkapi dengan rambut dari ijuk hitam asli dan dihiasi dengan ornamen tradisional. Cocok untuk pertunjukan Reog, koleksi pribadi, atau hiasan interior dengan nilai seni tinggi.'
   };
 
   // WhatsApp configuration
@@ -75,7 +75,7 @@ export function ProductDetail() {
       image: productImages[0],
       title: productData.name,
       price: productData.price,
-      priceNumber: 850000, // Nanti diambil dari backend
+      priceNumber: 3200000, // Nanti diambil dari backend
       quantity: 1,
       category: productData.category,
       seller: outletName
@@ -101,7 +101,7 @@ export function ProductDetail() {
 
   // Array of product images
   const productImages = [
-    'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800',
+    'https://imgs.search.brave.com/ilmeyRDzMht7VejfLizgAWfQHBnyFqx-F-GHBTzCU_4/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/aW5ld3MuY28uaWQv/bWVkaWEvMTA1MC9m/aWxlcy9pbmV3c19u/ZXcvMjAyMy8wOC8w/My9SZW9nX1Bvbm9y/b2dvLmpwZw',
     'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800',
     'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800',
     'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800'

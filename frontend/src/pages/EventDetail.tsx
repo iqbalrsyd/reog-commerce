@@ -9,9 +9,9 @@ export function EventDetail() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showTicketSelector, setShowTicketSelector] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<{[key: string]: number}>({
-    'CAT A': 0,
-    'CAT B': 0,
-    'CAT C': 0
+    'VIP': 0,
+    'Tribun': 0,
+    'Festival': 0
   });
 
   // Check if this is seller view (URL starts with /seller/)
@@ -22,13 +22,13 @@ export function EventDetail() {
 
   // Event data (nanti akan diambil dari API berdasarkan id)
   const eventData = {
-    name: 'Festival Reog Ponorogo 2024',
+    name: 'Festival Grebeg Suro Ponorogo 2024',
     date: '25 Februari 2024',
-    time: '19:00 - 22:00 WIB',
+    time: '19:00 - 23:00 WIB',
     location: 'Alun-alun Ponorogo, Jawa Timur',
-    address: 'Jl. Alun-alun Utara No. 1',
-    capacity: '500 orang',
-    remainingTickets: '120 tiket tersisa',
+    address: 'Jl. Alun-alun Utara, Kelurahan Tonatan, Ponorogo',
+    capacity: '1.000 orang',
+    remainingTickets: '350 tiket tersisa',
     priceRange: 'Rp 50.000 - Rp 150.000',
     startingPrice: 'Rp 50.000'
   };
@@ -131,9 +131,9 @@ export function EventDetail() {
     
     // Reset selections and close popup
     setSelectedTickets({
-      'CAT A': 0,
-      'CAT B': 0,
-      'CAT C': 0
+      'VIP': 0,
+      'Tribun': 0,
+      'Festival': 0
     });
     setShowTicketSelector(false);
     
@@ -156,19 +156,28 @@ export function EventDetail() {
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + eventImages.length) % eventImages.length);
   };
-  const eventContents = ['Tari Reog Ponorogo klasik dengan 40 penari', 'Pertunjukan Wayang Kulit oleh dalang terkenal', 'Tari Jathilan dengan kuda kepang tradisional', 'Penampilan Barongsai dan Dadak Merak', 'Pameran kerajinan dan kuliner khas Ponorogo', 'Workshop membuat topeng Reog untuk anak-anak'];
+  const eventContents = [
+    'Kirab Pusaka Reog Ponorogo dengan 100 penari',
+    'Penampilan Singo Barong dari berbagai sanggar terbaik',
+    'Tari Dadak Merak spektakuler dengan mahkota bulu merak 3 meter',
+    'Atraksi Bujang Ganong dan Warok tradisional',
+    'Pentas musik gamelan Jawa dan kendang Reog',
+    'Lomba Reog antar kecamatan se-Ponorogo',
+    'Pameran kerajinan topeng dan properti Reog',
+    'Bazar kuliner khas Ponorogo (Dawet Jabung, Sate Ponorogo, dll)'
+  ];
   const pricingCategories = [{
-    category: 'CAT A',
+    category: 'VIP',
     price: 'Rp 150.000',
-    benefits: 'VIP seating, meet & greet'
+    benefits: 'Kursi depan, meet & greet penari, merchandise'
   }, {
-    category: 'CAT B',
+    category: 'Tribun',
     price: 'Rp 100.000',
-    benefits: 'Reserved seating'
+    benefits: 'Kursi tribun, view terbaik, merchandise'
   }, {
-    category: 'CAT C',
+    category: 'Festival',
     price: 'Rp 50.000',
-    benefits: 'General admission'
+    benefits: 'Standing area, free akses semua zona'
   }];
   return <div className="min-h-screen bg-gray-50">
       {/* Login Prompt Popup */}
@@ -357,9 +366,10 @@ export function EventDetail() {
               Deskripsi Event
             </h3>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
-              Festival Reog Ponorogo tahunan yang menampilkan berbagai
-              pertunjukan seni dan budaya. Acara ini menampilkan penari Reog
-              terbaik dari berbagai daerah dan berbagai atraksi budaya lainnya.
+              Festival Grebeg Suro adalah puncak perayaan tahun baru Islam di Ponorogo yang menampilkan kemegahan Reog Ponorogo. 
+              Event tahunan ini menampilkan ratusan penari Reog dari berbagai sanggar di Ponorogo dan sekitarnya, dengan atraksi 
+              Singo Barong, Dadak Merak, Bujang Ganong, dan Warok. Acara ini merupakan ajang kompetisi sekaligus pelestarian 
+              budaya Reog yang telah diakui UNESCO sebagai warisan budaya takbenda Indonesia.
             </p>
             <h4 className="font-semibold text-gray-800 mb-2 text-sm">
               Rangkaian Acara:

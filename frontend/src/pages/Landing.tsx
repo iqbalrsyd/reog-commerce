@@ -19,12 +19,16 @@ export function Landing() {
   ];
   const heroSlides = [{
     title: 'Festival Reog Ponorogo 2024',
-    subtitle: 'Bergabunglah dalam perayaan budaya terbesar tahun ini',
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800'
+    subtitle: 'Grebeg Suro - Perayaan budaya terbesar Ponorogo',
+    image: 'https://imgs.search.brave.com/sw-HX8b1_dJNQNcfvURDTu-It4Li-03DQasF892j5Qk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4w/LXByb2R1Y3Rpb24t/aW1hZ2VzLWtseS5h/a2FtYWl6ZWQubmV0/L0lZLVVfQ0RUYklG/QVRxbkxCSmRfZlRh/VkpuST0vNjQweDM2/MC9zbWFydC9maWx0/ZXJzOnF1YWxpdHko/NzUpOnN0cmlwX2lj/YygpL2tseS1tZWRp/YS1wcm9kdWN0aW9u/L21lZGlhcy81MjY0/MDY4L29yaWdpbmFs/LzA5NjM1MjUwMF8x/NzUwODM3OTcxLVJl/b2dfUG9ub3JvZ28u/anBn'
   }, {
-    title: 'Koleksi Topeng Eksklusif',
-    subtitle: 'Topeng Reog handmade dari pengrajin terbaik',
-    image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800'
+    title: 'Dadak Merak Asli Ponorogo',
+    subtitle: 'Mahkota kebanggaan penari Reog dari pengrajin terpercaya',
+    image: 'https://imgs.search.brave.com/UEnlQcJytx2-PLEfv9Alvg4KqtHJdA2hEAtD1wEIVZg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZi5z/aG9wZWUuY28uaWQv/ZmlsZS9pZC0xMTEz/NDI3NS03cmJrOC1t/OXpkcjlreXExMmw5/MQ'
+  }, {
+    title: 'Topeng Singa Barong Premium',
+    subtitle: 'Karya seni ukir kayu terbaik dari Ponorogo',
+    image: 'https://imgs.search.brave.com/ilmeyRDzMht7VejfLizgAWfQHBnyFqx-F-GHBTzCU_4/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/aW5ld3MuY28uaWQv/bWVkaWEvMTA1MC9m/aWxlcy9pbmV3c19u/ZXcvMjAyMy8wOC8w/My9SZW9nX1Bvbm9y/b2dvLmpwZw'
   }];
   
   // Auto-play carousel
@@ -67,57 +71,89 @@ export function Landing() {
   
   const events = [{
     id: 1,
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
-    title: 'Festival Reog Ponorogo 2024',
+    image: 'https://imgs.search.brave.com/2rhctqGr9I4l4rD3jOihRii3k8FHjpVpv2sELIWTexc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly93b25k/ZXJmdWxpbWFnZS5z/My1pZC1qa3QtMS5r/aWxhdHN0b3JhZ2Uu/aWQvMTY1OTI3NTE4/OS1mZXN0aXZhbC1y/ZW9nLXBvbm9yb2dv/LTIwMjItMzYtanBn/LXRodW1iLmpwZw',
+    title: 'Festival Grebeg Suro Ponorogo 2024',
     price: 'Rp 50.000 - Rp 150.000',
     location: 'Alun-alun Ponorogo',
-    date: '25 Feb 2024, 19:00 WIB'
+    date: '1 Suro 1946 (25 Feb 2024), 19:00 WIB'
   }, {
     id: 2,
     image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
-    title: 'Workshop Tari Reog untuk Pemula',
-    price: 'Rp 200.000',
-    location: 'Sanggar Seni Ponorogo',
-    date: '15 Mar 2024, 09:00 WIB'
+    title: 'Pelatihan Tari Reog Tradisional',
+    price: 'Rp 250.000',
+    location: 'Sanggar Seni Wayang Kulit Ponorogo',
+    date: '10 Maret 2024, 08:00 - 16:00 WIB'
   }, {
     id: 3,
     image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
-    title: 'Pagelaran Wayang Kulit Reog',
+    title: 'Pagelaran Wayang Kulit Semalam Suntuk',
     price: 'Gratis',
     location: 'Pendopo Kabupaten Ponorogo',
-    date: '20 Mar 2024, 20:00 WIB'
+    date: '17 Maret 2024, 20:00 - 05:00 WIB'
+  }, {
+    id: 4,
+    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
+    title: 'Workshop Pembuatan Topeng Reog',
+    price: 'Rp 300.000',
+    location: 'Desa Setono, Jenangan, Ponorogo',
+    date: '24 Maret 2024, 09:00 - 15:00 WIB'
+  }, {
+    id: 5,
+    image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400',
+    title: 'Pentas Seni Dadak Merak Festival',
+    price: 'Rp 75.000 - Rp 200.000',
+    location: 'Taman Thypoday Ponorogo',
+    date: '5 April 2024, 18:00 - 22:00 WIB'
   }];
   
   const products = [{
     id: 1,
-    image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
-    title: 'Topeng Singa Barong Premium',
-    price: 'Rp 2.5jt - Rp 3.5jt',
-    location: 'Ponorogo'
+    image: 'https://imgs.search.brave.com/ilmeyRDzMht7VejfLizgAWfQHBnyFqx-F-GHBTzCU_4/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/aW5ld3MuY28uaWQv/bWVkaWEvMTA1MC9m/aWxlcy9pbmV3c19u/ZXcvMjAyMy8wOC8w/My9SZW9nX1Bvbm9y/b2dvLmpwZw',
+    title: 'Topeng Singa Barong Premium Ukir Kayu Mahoni',
+    price: 'Rp 3.200.000',
+    location: 'Desa Setono, Ponorogo'
   }, {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
-    title: 'Kostum Barongan Lengkap',
-    price: 'Rp 5.0jt - Rp 6.0jt',
-    location: 'Ponorogo'
+    image: 'https://imgs.search.brave.com/UEnlQcJytx2-PLEfv9Alvg4KqtHJdA2hEAtD1wEIVZg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZi5z/aG9wZWUuY28uaWQv/ZmlsZS9pZC0xMTEz/NDI3NS03cmJrOC1t/OXpkcjlreXExMmw5/MQ',
+    title: 'Dadak Merak Bulu Merak Asli 3 Meter',
+    price: 'Rp 8.500.000',
+    location: 'Desa Tegalsari, Ponorogo'
   }, {
     id: 3,
     image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400',
-    title: 'Properti Dadak Merak Handmade',
-    price: 'Rp 1.2jt',
-    location: 'Madiun'
+    title: 'Kostum Warok Lengkap (Baju + Celana Komprang)',
+    price: 'Rp 1.800.000',
+    location: 'Ponorogo Kota'
   }, {
     id: 4,
     image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
-    title: 'Kostum Tari Reog Anak',
-    price: 'Rp 850.000',
-    location: 'Ponorogo'
+    title: 'Topeng Bujang Ganong Kayu Jati',
+    price: 'Rp 2.500.000',
+    location: 'Desa Setono, Ponorogo'
   }, {
     id: 5,
     image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
-    title: 'Topeng Reog Warok',
-    price: 'Rp 1.8jt',
-    location: 'Ponorogo'
+    title: 'Kuda Kepang Jathilan Set Lengkap (4 Kuda)',
+    price: 'Rp 6.000.000',
+    location: 'Jenangan, Ponorogo'
+  }, {
+    id: 6,
+    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
+    title: 'Kendang Reog Kulit Sapi Asli',
+    price: 'Rp 1.200.000',
+    location: 'Babadan, Ponorogo'
+  }, {
+    id: 7,
+    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
+    title: 'Barongsai Mini untuk Anak-anak',
+    price: 'Rp 950.000',
+    location: 'Ponorogo Kota'
+  }, {
+    id: 8,
+    image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400',
+    title: 'Angklung Reog Set 8 Nada',
+    price: 'Rp 1.500.000',
+    location: 'Mlarak, Ponorogo'
   }];
   
   return <div className="min-h-screen bg-[#F5F5F5]">

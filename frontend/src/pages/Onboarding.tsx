@@ -56,8 +56,17 @@ export function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#E97DB4] via-[#C75B8A] to-[#4A9B9B] flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0" style={{
+        backgroundImage: "url('https://cdn.antaranews.com/cache/1200x800/2023/01/31/WhatsApp-Image-2023-01-30-at-09.03.47.jpeg?w=1200')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2E2557]/60 via-[#4A9B9B]/50 to-[#5B7B6F]/60" />
+      </div>
+
+      <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl max-w-md w-full p-8 relative z-10 border-2 border-white/30">
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3].map((s) => (
@@ -166,14 +175,14 @@ export function Onboarding() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
               {categories.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => handleChange('category', cat.value)}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     formData.category === cat.value
-                      ? 'border-[#4A9B9B] bg-[#4A9B9B]/10 shadow-lg scale-105'
+                      ? 'border-[#4A9B9B] bg-[#4A9B9B]/10 shadow-lg transform scale-[0.98]'
                       : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                   }`}
                 >

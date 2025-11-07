@@ -86,15 +86,15 @@ export function Login() {
           <p className="text-white/90 text-base">Pasar Seni & Budaya Reog</p>
         </div>
 
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 border-2 border-white/50">
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border-2 border-white/30">
           {/* Tab Switcher */}
-          <div className="flex gap-2 mb-6 bg-gray-100 rounded-xl p-1">
+          <div className="flex gap-2 mb-6 bg-white/60 rounded-xl p-1">
             <button
               onClick={() => setActiveTab('login')}
               className={`flex-1 py-2.5 rounded-lg font-semibold transition-all ${
                 activeTab === 'login'
-                  ? 'bg-white text-[#4A9B9B] shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-white/90 text-[#4A9B9B] shadow-sm'
+                  : 'text-gray-700 hover:text-gray-900'
               }`}
             >
               Login
@@ -103,8 +103,8 @@ export function Login() {
               onClick={() => setActiveTab('signup')}
               className={`flex-1 py-2.5 rounded-lg font-semibold transition-all ${
                 activeTab === 'signup'
-                  ? 'bg-white text-[#4A9B9B] shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'bg-white/90 text-[#4A9B9B] shadow-sm'
+                  : 'text-gray-700 hover:text-gray-900'
               }`}
             >
               Sign Up

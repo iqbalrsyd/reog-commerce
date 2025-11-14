@@ -29,6 +29,22 @@ export const login = async (req, res) => {
   }
 };
 
+export const googleSignIn = async (req, res) => {
+  try {
+    const { idToken, email, displayName, photoURL, uid } = req.body;
+    
+    if (!uid || !email) {
+      return errorResponse(res, 'Missing required fields', 'BAD_REQUEST', null, 400);
+    }
+    
+    const result = await authService.googleSignIn({ idToken, email, displayName, photoURL, uid });
+    return successResponse(res, result, 'Google sign-in successful', result.isNewUser ? 201 : 200);
+  } catch (error) {
+    console.error('Error in auth.controller.js googleSignIn:', error);
+    return serverErrorResponse(res, error.message);
+  }
+};
+
 export const logout = async (req, res) => {
   try {
     const result = await authService.logout();

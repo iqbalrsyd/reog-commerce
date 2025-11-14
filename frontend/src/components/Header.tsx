@@ -56,39 +56,12 @@ export function Header({
     path: '/profile',
     icon: UserIcon
   }];
-  const sellerMenuItems = [{
-    label: 'Dashboard',
-    path: '/seller/dashboard'
-  }, {
-    label: 'Produk',
-    path: '/seller/products'
-  }, {
-    label: 'Event',
-    path: '/seller/events'
-  }, {
-    label: 'Galeri',
-    path: '/seller/gallery'
-  }, {
-    label: 'Analitik',
-    path: '/seller/analytics'
-  }, {
-    label: 'Profil',
-    path: '/profile'
-  }, {
-    label: 'Keluar',
-    path: '/'
-  }];
 
   // Outlet menu items based on outlet type
   const getOutletMenuItems = () => {
     if (!outletType) return [];
-    
+
     const baseItems = [
-      {
-        label: 'Beranda Outlet',
-        path: outletType === 'produk' ? '/product-dashboard' : '/event-dashboard',
-        icon: HomeIcon
-      },
       {
         label: 'Analitik',
         path: '/analytics',
@@ -98,24 +71,24 @@ export function Header({
 
     // Add product or event specific items
     if (outletType === 'produk') {
-      baseItems.splice(1, 0, 
+      baseItems.unshift(
         {
-          label: 'Produk',
+          label: 'Beranda Outlet',
           path: '/product-dashboard',
-          icon: PackageIcon
+          icon: HomeIcon
         },
         {
           label: 'Tambah Produk',
           path: '/add-product',
           icon: PlusCircleIcon
         }
-      );
+      ); 
     } else if (outletType === 'event') {
-      baseItems.splice(1, 0,
+      baseItems.unshift(
         {
-          label: 'Event',
+          label: 'Beranda Outlet',
           path: '/event-dashboard',
-          icon: CalendarIcon
+          icon: HomeIcon
         },
         {
           label: 'Tambah Event',
@@ -124,14 +97,14 @@ export function Header({
         }
       );
     } else if (outletType === 'keduanya') {
-      baseItems.splice(1, 0,
+      baseItems.unshift(
         {
-          label: 'Produk',
+          label: 'Beranda Produk',
           path: '/product-dashboard',
-          icon: PackageIcon
+          icon: HomeIcon
         },
         {
-          label: 'Event',
+          label: 'Beranda Event',
           path: '/event-dashboard',
           icon: CalendarIcon
         },
@@ -148,11 +121,16 @@ export function Header({
       );
     }
 
-    return baseItems;
+    // Remove duplicates by filtering items with unique paths
+    const uniqueItems = baseItems.filter((item, index, self) =>
+      index === self.findIndex((t) => t.path === item.path)
+    );
+
+    return uniqueItems;
   };
 
-  // Determine menu items based on user role
-  const menuItems = userRole === 'seller' ? sellerMenuItems : publicMenuItems;
+  // Use public menu items for everyone
+  const menuItems = publicMenuItems;
   const outletMenuItems = getOutletMenuItems();
   return <>
       <header className="sticky top-0 z-50 bg-[#E97DB4] shadow-lg">
@@ -234,12 +212,12 @@ export function Header({
               {/* Menu Utama */}
               <nav className="space-y-2">
                 {menuItems.map(item => {
-                  const Icon = item.icon;
+                  const Icon = (item as any).icon;
                   return (
-                    <Link 
-                      key={item.path} 
-                      to={item.path} 
-                      onClick={() => setIsMenuOpen(false)} 
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setIsMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#E97DB4] hover:text-white text-gray-700 transition-all font-medium group"
                     >
                       {Icon && <Icon className="w-4 h-4 text-[#E97DB4] group-hover:text-white" />}
@@ -249,8 +227,8 @@ export function Header({
                 })}
               </nav>
 
-              {/* Menu Outlet - Only show if user is logged in AND has outlet */}
-              {isLoggedIn && hasOutlet && outletMenuItems.length > 0 && (
+              {/* Menu Outlet - Only show if user is logged in, has outlet, AND is seller */}
+              {isLoggedIn && hasOutlet && outletMenuItems.length > 0 && userRole === 'seller' && (
                 <>
                   <div className="my-6 border-t border-gray-200 pt-6">
                     <div className="flex items-center gap-2 mb-4">

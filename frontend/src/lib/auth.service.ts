@@ -58,6 +58,68 @@ export const authService = {
     }
   },
 
+  // Google Sign-In using Google Identity Services
+  async googleSignIn(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // Check if Google Sign-In API is loaded
+      if (typeof window === 'undefined' || !window.google) {
+        reject(new Error('Google Sign-In script belum dimuat. Silakan refresh page.'));
+        return;
+      }
+
+      try {
+        // Configure Google Sign-In
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        
+        if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
+          reject(new Error('Google Client ID belum dikonfigurasi. Silakan setup di .env file.'));
+          return;
+        }
+
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: any) => {
+            try {
+              // Decode JWT token to get user info
+              const credential = response.credential;
+              const payload = JSON.parse(atob(credential.split('.')[1]));
+
+              // Send to backend
+              const backendResponse = await api.post('/auth/google-signin', {
+                idToken: credential,
+                email: payload.email,
+                displayName: payload.name,
+                photoURL: payload.picture,
+                uid: payload.sub // Google user ID
+              });
+
+              const { user, token, isNewUser } = backendResponse.data.data;
+
+              // Store auth data
+              localStorage.setItem('authToken', token);
+              localStorage.setItem('user', JSON.stringify(user));
+              localStorage.setItem('isLoggedIn', 'true');
+
+              resolve({ user, token, isNewUser });
+            } catch (error: any) {
+              console.error('Google Sign-In backend error:', error);
+              reject(error);
+            }
+          },
+        });
+
+        // Show Google One Tap or render button
+        window.google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.log('One Tap not displayed, will use button instead');
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
+
   // Logout
   async logout() {
     try {
@@ -75,6 +137,7 @@ export const authService = {
       localStorage.removeItem('userAccount');
       localStorage.removeItem('onboardingCompleted');
       localStorage.removeItem('userEmail');
+      localStorage.removeItem('outlet');
     }
   },
 
@@ -123,6 +186,22 @@ export const authService = {
     } catch (error) {
       console.error('Error updating user data:', error);
       return null;
+    }
+  },
+
+  // Update user profile in backend
+  async updateProfile(userData: { origin?: string; category?: string; phoneNumber?: string }) {
+    try {
+      const response = await api.put('/users/profile', userData);
+      const updatedUser = response.data.data;
+
+      // Update localStorage
+      this.updateUserData(updatedUser);
+
+      return updatedUser;
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      throw error;
     }
   }
 };

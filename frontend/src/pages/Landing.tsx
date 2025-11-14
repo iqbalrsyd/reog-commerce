@@ -4,6 +4,35 @@ import { ProductCard } from '../components/ProductCard';
 import { EventCard } from '../components/EventCard';
 import api from '../lib/api';
 import { formatProductPrice, formatEventPrice } from '../lib/currency';
+
+// Type definitions
+interface Product {
+  id: string;
+  image: string;
+  title: string;
+  price: string;
+  category: string;
+  seller: string;
+  location: string;
+  views: number;
+  likes: number;
+  rating: number;
+  sold: number;
+}
+
+interface Event {
+  id: string;
+  image: string;
+  title: string;
+  price: string;
+  outlet: string;
+  date: string;
+  capacity: number;
+  interested: number;
+  views: number;
+  rating: number;
+}
+
 export function Landing() {
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -11,22 +40,21 @@ export function Landing() {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
 
   const productCategories = [
     'Semua',
-    'Topeng',
-    'Kostum',
-    'Wayang',
-    'Properti',
-    'Dadak Merak',
-    'Kendang',
     'Kerajinan',
-    'Seni',
-    'Fashion',
-    'Kuliner'
+    'Topeng',
+    'Pakaian',
+    'Wayang'
   ];
+
+  // Filter products based on active category
+  const filteredProducts = activeCategory === 'Semua' 
+    ? products 
+    : products.filter(product => product.category === activeCategory);
 
   // Fetch products and events from backend
   const fetchData = async () => {
@@ -44,6 +72,8 @@ export function Landing() {
         title: product.name,
         price: formatProductPrice(product.price?.min || 0, product.price?.max),
         category: product.category,
+        seller: product.outlet?.name || 'Toko',
+        location: product.outlet?.name || 'Toko',
         views: product.stats?.views || 0,
         likes: product.stats?.likes || 0,
         rating: product.stats?.rating || 0,
@@ -55,24 +85,36 @@ export function Landing() {
       const eventsData = eventsResponse.data.data?.events || [];
 
       // Transform events to match frontend format
-      const transformedEvents = eventsData.map((event: any) => ({
-        id: event.id,
-        image: event.images?.[0] || 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
-        title: event.name,
-        price: formatEventPrice(event.ticketCategories || []),
-        location: event.location?.name || event.location || 'Ponorogo',
-        date: new Date(event.date).toLocaleDateString('id-ID', {
+      const transformedEvents = eventsData.map((event: any) => {
+        // Convert Firebase Timestamp to Date
+        let eventDate;
+        if (event.date && typeof event.date === 'object' && event.date._seconds !== undefined) {
+          eventDate = new Date(event.date._seconds * 1000 + (event.date._nanoseconds || 0) / 1000000);
+        } else {
+          eventDate = new Date(event.date);
+        }
+
+        // Format date with time
+        const dateStr = eventDate.toLocaleDateString('id-ID', {
           day: 'numeric',
           month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        capacity: event.capacity,
-        interested: event.stats?.interested || 0,
-        views: event.stats?.views || 0,
-        rating: event.stats?.rating || 0,
-      }));
+          year: 'numeric'
+        });
+        const timeStr = `${event.startTime || '19:00'} - ${event.endTime || '23:00'}`;
+
+        return {
+          id: event.id,
+          image: event.images?.[0] || 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
+          title: event.name,
+          price: formatEventPrice(event.ticketCategories || []),
+          outlet: event.outlet?.name || 'Penyelenggara',
+          date: `${dateStr} • ${timeStr}`,
+          capacity: event.capacity,
+          interested: event.stats?.interested || 0,
+          views: event.stats?.views || 0,
+          rating: event.stats?.rating || 0,
+        };
+      });
 
       setProducts(transformedProducts);
       setEvents(transformedEvents);
@@ -214,7 +256,7 @@ export function Landing() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-[#2E2557]">Produk Reog</h3>
             <span className="text-sm text-gray-600 font-medium">
-              {products.length} produk
+              {filteredProducts.length} produk
             </span>
           </div>
           
@@ -245,13 +287,17 @@ export function Landing() {
               </div>
             ))}
           </div>
-        ) : products.length > 0 ? (
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 pb-6">
-            {products.map((product, index) => <ProductCard key={`${product.id}-${index}`} {...product} />)}
+            {filteredProducts.map((product, index) => <ProductCard key={`${product.id}-${index}`} {...product} />)}
           </div>
         ) : (
           <div className="bg-white rounded-xl p-8 text-center shadow-sm mb-6">
-            <p className="text-gray-500 text-sm">Belum ada produk tersedia</p>
+            <p className="text-gray-500 text-sm">
+              {activeCategory === 'Semua' 
+                ? 'Belum ada produk tersedia' 
+                : `Belum ada produk kategori ${activeCategory}`}
+            </p>
           </div>
         )}
       </div>

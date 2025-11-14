@@ -6,11 +6,11 @@ import { authService } from '../lib/auth.service'; // Import the auth service
 export function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation(); // Get location object to access state
-  const { email, password } = location.state || {}; // Extract email and password from state
+  const { email, password, name, photoURL, isGoogleAuth } = location.state || {}; // Extract data from state
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    name: '',
+    name: name || '', // Pre-fill name if from Google
     origin: '',
     category: ''
   });
@@ -39,24 +39,47 @@ export function Onboarding() {
       return;
     }
 
-    if (!email || !password) {
+    // Validation: For regular signup, password is required
+    if (!isGoogleAuth && (!email || !password)) {
       alert('Email dan password tidak ditemukan. Silakan coba login/daftar ulang.');
-      navigate('/login'); // Redirect to login if credentials are missing
+      navigate('/login');
+      return;
+    }
+
+    // For Google Auth, email is required but password is not
+    if (isGoogleAuth && !email) {
+      alert('Email tidak ditemukan. Silakan coba login dengan Google ulang.');
+      navigate('/login');
       return;
     }
 
     setLoading(true);
     try {
-      const registrationData = {
+      const registrationData: any = {
         email,
-        password,
         name: formData.name,
         origin: formData.origin,
         category: formData.category,
-        // phoneNumber can be added if collected in onboarding
       };
 
-      await authService.register(registrationData);
+      // Only add password for regular signup
+      if (!isGoogleAuth && password) {
+        registrationData.password = password;
+      }
+
+      // If Google Auth, the user is already created in backend
+      // We just need to update additional info
+      if (isGoogleAuth) {
+        // User already exists from Google Sign-In
+        // Update user profile with additional data
+        await authService.updateProfile({
+          origin: formData.origin,
+          category: formData.category,
+        });
+      } else {
+        // Regular signup - create new user
+        await authService.register(registrationData);
+      }
 
       // Show success and redirect
       setStep(4);

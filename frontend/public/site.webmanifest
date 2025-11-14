@@ -1,0 +1,21 @@
+{
+  "name": "Reog Commerce",
+  "short_name": "Reog",
+  "description": "Pasar Seni & Budaya Reog Ponorogo - Platform jual beli produk kerajinan dan tiket event Reog",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#800000",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "entertainment", "lifestyle"],
+  "lang": "id",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/topeng-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

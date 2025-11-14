@@ -163,6 +163,24 @@ export const getProducts = async (filters) => {
         }))
         .filter(product => !product.isDeleted);
       
+      // Fetch outlet data for each product
+      for (const product of products) {
+        if (product.outletId) {
+          try {
+            const outletDoc = await db.collection('outlets').doc(product.outletId).get();
+            if (outletDoc.exists) {
+              product.outlet = {
+                id: outletDoc.id,
+                name: outletDoc.data().name,
+                type: outletDoc.data().type,
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching outlet:', error);
+          }
+        }
+      }
+      
       // Get total count (approximate)
       const totalSnapshot = await db.collection('products').where('isActive', '==', true).get();
       const total = totalSnapshot.size;
@@ -236,6 +254,22 @@ export const getProductById = async (productId, userId) => {
     id: productDoc.id,
     ...productDoc.data(),
   };
+  
+  // Fetch outlet data if outletId exists
+  if (product.outletId) {
+    try {
+      const outletDoc = await db.collection('outlets').doc(product.outletId).get();
+      if (outletDoc.exists) {
+        product.outlet = {
+          id: outletDoc.id,
+          name: outletDoc.data().name,
+          type: outletDoc.data().type,
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching outlet:', error);
+    }
+  }
   
   // Increment view count if user is authenticated
   if (userId) {

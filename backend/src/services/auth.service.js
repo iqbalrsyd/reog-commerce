@@ -118,6 +118,77 @@ export const login = async (credentials) => {
 };
 
 /**
+ * Google Sign-In
+ * Handle Google OAuth login/register
+ */
+export const googleSignIn = async (googleData) => {
+  try {
+    const { idToken, email, displayName, photoURL, uid } = googleData;
+
+    // Verify ID token (optional but recommended)
+    // In production, you should verify the idToken from Firebase client
+    
+    // Check if user already exists
+    let userDoc = await db.collection('users').doc(uid).get();
+    
+    if (userDoc.exists) {
+      // User exists - just login
+      const userData = userDoc.data();
+      const token = await auth.createCustomToken(uid);
+      
+      // Update last login
+      await db.collection('users').doc(uid).update({
+        updatedAt: getTimestamp(),
+      });
+      
+      return {
+        success: true,
+        user: {
+          uid,
+          ...userData,
+        },
+        token: token,
+        isNewUser: false,
+      };
+    } else {
+      // New user - register
+      const newUserDoc = {
+        uid,
+        email,
+        name: displayName || 'User',
+        photoURL: photoURL || '',
+        origin: '',
+        category: 'Umum',
+        phoneNumber: '',
+        role: 'buyer',
+        sellerInfo: {
+          hasOutlet: false,
+          outletId: null,
+          joinedAsSellerAt: null,
+        },
+        authProvider: 'google',
+        createdAt: getTimestamp(),
+        updatedAt: getTimestamp(),
+      };
+      
+      await db.collection('users').doc(uid).set(newUserDoc);
+      
+      const token = await auth.createCustomToken(uid);
+      
+      return {
+        success: true,
+        user: newUserDoc,
+        token: token,
+        isNewUser: true,
+      };
+    }
+  } catch (error) {
+    console.error('Error in googleSignIn service:', error);
+    throw error;
+  }
+};
+
+/**
  * Get user data from Firestore
  * Used after Firebase Auth client-side authentication
  */

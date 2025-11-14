@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MailIcon, LockIcon, LogInIcon, UserPlusIcon, ArrowLeftIcon } from 'lucide-react';
 import { authService } from '../lib/auth.service'; // Import the auth service
@@ -10,6 +10,19 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Load Google Sign-In script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +65,41 @@ export function Login() {
     }
   };
 
-  // Removed handleGoogleAuth as it's a simulation and not part of the current backend integration.
+  // Handle Google Sign-In
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    try {
+      // Check if Google script is loaded
+      if (typeof window === 'undefined' || !(window as any).google) {
+        alert('Google Sign-In belum siap. Mohon tunggu beberapa detik dan coba lagi.');
+        setLoading(false);
+        return;
+      }
+
+      const result: any = await authService.googleSignIn();
+      
+      if (result.isNewUser) {
+        // New user - redirect to onboarding with Google data
+        navigate('/onboarding', { 
+          state: { 
+            email: result.user.email, 
+            name: result.user.name,
+            photoURL: result.user.photoURL,
+            isGoogleAuth: true
+          } 
+        });
+      } else {
+        // Existing user - redirect to landing
+        navigate('/', { replace: true });
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In failed:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Google Sign-In gagal. Silakan coba lagi.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4">
       <div className="absolute inset-0 z-0" style={{
@@ -186,7 +233,8 @@ export function Login() {
 
             {/* Google Auth Button (Placeholder for future implementation) */}
             <button 
-              type="button" 
+              type="button"
+              onClick={handleGoogleAuth}
               className="w-full border-2 border-[#2E2557] text-[#2E2557] py-4 rounded-xl font-bold hover:bg-[#2E2557] hover:text-white transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
@@ -210,6 +258,9 @@ export function Login() {
               </svg>
               {activeTab === 'login' ? 'Masuk' : 'Daftar'} dengan Google
             </button>
+            
+            {/* Hidden div for Google Sign-In button render */}
+            <div id="google-signin-button" className="hidden"></div>
           </form>
 
           {activeTab === 'signup' && (

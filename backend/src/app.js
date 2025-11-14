@@ -19,8 +19,20 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware with proper configuration for Google Sign-In
+app.use(helmet({
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
+      connectSrc: ["'self'", "https://accounts.google.com"],
+    },
+  },
+}));
 
 // CORS configuration
 const corsOptions = {

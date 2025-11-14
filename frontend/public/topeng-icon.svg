@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#800000"/>
+  
+  <!-- Topeng outline -->
+  <path d="M 30 35 Q 30 25 35 22 Q 40 20 50 20 Q 60 20 65 22 Q 70 25 70 35 L 70 55 Q 70 65 65 70 Q 60 73 50 75 Q 40 73 35 70 Q 30 65 30 55 Z" 
+        fill="#FFD700" 
+        stroke="#8B4513" 
+        stroke-width="2"/>
+  
+  <!-- Left eye -->
+  <ellipse cx="40" cy="40" rx="5" ry="7" fill="#2E2557"/>
+  <circle cx="40" cy="39" r="2" fill="white"/>
+  
+  <!-- Right eye -->
+  <ellipse cx="60" cy="40" rx="5" ry="7" fill="#2E2557"/>
+  <circle cx="60" cy="39" r="2" fill="white"/>
+  
+  <!-- Nose -->
+  <path d="M 48 45 L 50 52 L 52 45 Z" fill="#8B4513"/>
+  
+  <!-- Mouth (smile) -->
+  <path d="M 38 58 Q 50 65 62 58" 
+        stroke="#E97DB4" 
+        stroke-width="2.5" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <!-- Decorative elements (crown-like top) -->
+  <path d="M 35 22 L 33 15 L 35 18 L 38 12 L 38 18" 
+        fill="#E97DB4" 
+        stroke="#800000" 
+        stroke-width="1"/>
+  <path d="M 50 18 L 48 10 L 50 14 L 52 10 L 50 18" 
+        fill="#E97DB4" 
+        stroke="#800000" 
+        stroke-width="1"/>
+  <path d="M 65 22 L 67 15 L 65 18 L 62 12 L 62 18" 
+        fill="#E97DB4" 
+        stroke="#800000" 
+        stroke-width="1"/>
+  
+  <!-- Side decorations -->
+  <circle cx="28" cy="45" r="3" fill="#4A9B9B"/>
+  <circle cx="72" cy="45" r="3" fill="#4A9B9B"/>
+</svg>

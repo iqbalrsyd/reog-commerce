@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeftIcon, EditIcon, TrashIcon, CalendarIcon, MapPinIcon, UsersIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon, TicketIcon, XIcon, MinusIcon, PlusIcon } from 'lucide-react';
+import { ArrowLeftIcon, EditIcon, TrashIcon, CalendarIcon, UsersIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon, TicketIcon, XIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import { formatEventPrice } from '../lib/currency';
+
+// Type definitions
+interface TicketCategory {
+  category?: string;
+  name?: string;
+  price?: number;
+  benefits?: string;
+  quota?: number;
+  available?: number;
+}
 
 export function EventDetail() {
   const navigate = useNavigate();
@@ -33,10 +43,14 @@ export function EventDetail() {
         setEventData(event);
 
         // Initialize selected tickets with all categories set to 0
-        if (event.ticketCategories && event.ticketCategories.length > 0) {
+        const ticketData = Array.isArray(event.ticketCategories)
+          ? event.ticketCategories
+          : event.tiketCategories ? [event.tiketCategories] : [];
+
+        if (ticketData && ticketData.length > 0) {
           const initialTickets: {[key: string]: number} = {};
-          event.ticketCategories.forEach((tc: any) => {
-            initialTickets[tc.name] = 0;
+          ticketData.forEach((tc: TicketCategory) => {
+            initialTickets[tc.category || tc.name || 'default'] = 0;
           });
           setSelectedTickets(initialTickets);
         }
@@ -46,8 +60,11 @@ export function EventDetail() {
         setEventData({
           name: 'Festival Grebeg Suro Ponorogo 2024',
           date: new Date('2024-02-25T19:00:00'),
-          location: 'Alun-alun Ponorogo, Jawa Timur',
-          address: 'Jl. Alun-alun Utara, Kelurahan Tonatan, Ponorogo',
+          location: {
+            name: 'Alun-alun Ponorogo, Jawa Timur',
+            address: 'Jl. Alun-alun Utara, Kelurahan Tonatan, Ponorogo',
+            coordinates: null
+          },
           capacity: 1000,
           description: 'Festival Grebeg Suro adalah puncak perayaan tahun baru Islam di Ponorogo yang menampilkan kemegahan Reog Ponorogo.',
           ticketCategories: [
@@ -95,15 +112,28 @@ export function EventDetail() {
     'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800'
   ];
 
+  // Helper function to convert Firebase timestamp to Date
+  const convertTimestamp = (timestamp: any) => {
+    if (!timestamp) return null;
+    if (timestamp && typeof timestamp === 'object' && timestamp._seconds !== undefined) {
+      return new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000);
+    }
+    return new Date(timestamp);
+  };
+
   // Get ticket categories from fetched data or fallback
-  const ticketCategories = eventData?.ticketCategories || [
-    { name: 'VIP', price: 150000, benefits: 'Kursi depan, meet & greet penari, merchandise', available: 100 },
-    { name: 'Tribun', price: 100000, benefits: 'Kursi tribun, view terbaik, merchandise', available: 300 },
-    { name: 'Festival', price: 50000, benefits: 'Standing area, free akses semua zona', available: 600 }
-  ];
+  const ticketCategories: TicketCategory[] = eventData?.ticketCategories || eventData?.tiketCategories ?
+    (Array.isArray(eventData.ticketCategories)
+      ? eventData.ticketCategories
+      : [eventData.tiketCategories].filter(Boolean)
+    ) : [
+      { category: 'VIP', name: 'VIP', price: 150000, benefits: 'Kursi depan, meet & greet penari, merchandise', quota: 100, available: 100 },
+      { category: 'Tribun', name: 'Tribun', price: 100000, benefits: 'Kursi tribun, view terbaik, merchandise', quota: 300, available: 300 },
+      { category: 'Festival', name: 'Festival', price: 50000, benefits: 'Standing area, free akses semua zona', quota: 600, available: 600 }
+    ];
 
   // Get program from fetched data or fallback
-  const eventProgram = eventData?.program || [
+  const eventProgram = eventData?.eventProgram || [
     'Kirab Pusaka Reog Ponorogo dengan 100 penari',
     'Penampilan Singo Barong dari berbagai sanggar terbaik',
     'Tari Dadak Merak spektakuler dengan mahkota bulu merak 3 meter',
@@ -128,18 +158,33 @@ export function EventDetail() {
 
     if (!eventData) return;
 
-    const formattedDate = eventData.date ?
-      new Date(eventData.date).toLocaleDateString('id-ID', {
+    const eventDate = convertTimestamp(eventData.date);
+    const formattedDate = eventDate ?
+      eventDate.toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
       }) : 'Tanggal TBD';
 
+    const locationName = typeof eventData.location === 'object'
+      ? eventData.location?.name || 'Lokasi TBD'
+      : eventData.location || 'Lokasi TBD';
+
+    // Format ticket categories for price display
+    const formattedCategories = ticketCategories
+      .filter((cat): cat is Required<Pick<TicketCategory, 'price' | 'category'>> & TicketCategory => 
+        cat.price !== undefined && (cat.category !== undefined || cat.name !== undefined)
+      )
+      .map(cat => ({
+        price: cat.price,
+        category: cat.category || cat.name || 'default'
+      }));
+
     const message = `Halo, saya tertarik untuk memesan tiket event berikut:\n\n` +
                    `*${eventData.name}*\n` +
                    `Tanggal: ${formattedDate}\n` +
-                   `Lokasi: ${eventData.location || 'Lokasi TBD'}\n` +
-                   `Harga: ${formatEventPrice(ticketCategories)}\n\n` +
+                   `Lokasi: ${locationName}\n` +
+                   `Harga: ${formatEventPrice(formattedCategories)}\n\n` +
                    `Apakah masih ada tiket yang tersedia?`;
 
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -183,8 +228,11 @@ export function EventDetail() {
     // Add each selected ticket category to cart
     Object.entries(selectedTickets).forEach(([categoryName, quantity]) => {
       if (quantity > 0) {
-        const categoryData = ticketCategories.find(c => c.name === categoryName);
+        const categoryData = ticketCategories.find((c: TicketCategory) => (c.category || c.name) === categoryName);
         if (!categoryData) return;
+
+        const eventDate = convertTimestamp(eventData.date);
+        const startTime = convertTimestamp(eventData.startTime);
 
         const cartItem = {
           id: `${id}-${categoryName}`,
@@ -196,9 +244,11 @@ export function EventDetail() {
           price: categoryData.price ? `Rp ${categoryData.price.toLocaleString('id-ID')}` : 'Rp 0',
           priceNumber: categoryData.price || 0,
           quantity: quantity,
-          date: eventData.date ? new Date(eventData.date).toLocaleDateString('id-ID') : 'Date TBD',
-          time: eventData.date ? new Date(eventData.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Time TBD',
-          location: eventData.location || 'Location TBD',
+          date: eventDate ? eventDate.toLocaleDateString('id-ID') : 'Date TBD',
+          time: startTime ? startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Time TBD',
+          location: typeof eventData.location === 'object'
+            ? eventData.location?.name || 'Location TBD'
+            : eventData.location || 'Location TBD',
           benefits: categoryData.benefits
         };
 
@@ -222,8 +272,8 @@ export function EventDetail() {
 
     // Reset selections and close popup
     const resetTickets: {[key: string]: number} = {};
-    ticketCategories.forEach((tc: any) => {
-      resetTickets[tc.name] = 0;
+    ticketCategories.forEach((tc: TicketCategory) => {
+      resetTickets[tc.category || tc.name || 'default'] = 0;
     });
     setSelectedTickets(resetTickets);
     setShowTicketSelector(false);
@@ -302,51 +352,54 @@ export function EventDetail() {
 
             {/* Ticket Categories */}
             <div className="p-4 space-y-3">
-              {ticketCategories.map((cat) => (
-                <div key={cat.name} className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-[#800000] text-lg">{cat.name}</p>
-                        <span className="text-xs bg-[#800000]/10 text-[#800000] px-2 py-0.5 rounded-full font-semibold">
-                          {cat.benefits}
-                        </span>
-                      </div>
-                      <p className="font-bold text-gray-800 text-xl">
-                        {cat.price ? `Rp ${cat.price.toLocaleString('id-ID')}` : 'Rp 0'}
-                      </p>
-                      {cat.available !== undefined && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Tersedia {cat.available} tiket
+              {ticketCategories.map((cat: TicketCategory) => {
+                const categoryKey = cat.category || cat.name || 'default';
+                return (
+                  <div key={categoryKey} className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold text-[#800000] text-lg">{categoryKey}</p>
+                          <span className="text-xs bg-[#800000]/10 text-[#800000] px-2 py-0.5 rounded-full font-semibold">
+                            {cat.benefits}
+                          </span>
+                        </div>
+                        <p className="font-bold text-gray-800 text-xl">
+                          {cat.price ? `Rp ${cat.price.toLocaleString('id-ID')}` : 'Rp 0'}
                         </p>
-                      )}
+                        {(cat.available !== undefined || cat.quota !== undefined) && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Tersedia {cat.available || cat.quota || 0} tiket
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Quantity Selector */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300">
-                    <span className="text-sm font-medium text-gray-600">Jumlah</span>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleTicketQuantityChange(cat.name, -1)}
-                        disabled={selectedTickets[cat.name] === 0}
-                        className="w-8 h-8 rounded-full border-2 border-[#E97DB4] flex items-center justify-center hover:bg-[#E97DB4] hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current"
-                      >
-                        <MinusIcon className="w-4 h-4" />
-                      </button>
-                      <span className="w-12 text-center font-bold text-lg">
-                        {selectedTickets[cat.name] || 0}
-                      </span>
-                      <button
-                        onClick={() => handleTicketQuantityChange(cat.name, 1)}
-                        className="w-8 h-8 rounded-full bg-[#E97DB4] text-white flex items-center justify-center hover:bg-[#d66b9f] transition-all"
-                      >
-                        <PlusIcon className="w-4 h-4" />
-                      </button>
+                    {/* Quantity Selector */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300">
+                      <span className="text-sm font-medium text-gray-600">Jumlah</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleTicketQuantityChange(categoryKey, -1)}
+                          disabled={selectedTickets[categoryKey] === 0}
+                          className="w-8 h-8 rounded-full border-2 border-[#E97DB4] flex items-center justify-center hover:bg-[#E97DB4] hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current"
+                        >
+                          <MinusIcon className="w-4 h-4" />
+                        </button>
+                        <span className="w-12 text-center font-bold text-lg">
+                          {selectedTickets[categoryKey] || 0}
+                        </span>
+                        <button
+                          onClick={() => handleTicketQuantityChange(categoryKey, 1)}
+                          className="w-8 h-8 rounded-full bg-[#E97DB4] text-white flex items-center justify-center hover:bg-[#d66b9f] transition-all"
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Summary & Confirm Button */}
@@ -381,7 +434,7 @@ export function EventDetail() {
         {/* Image Carousel */}
         <div className="relative h-64 bg-gray-200">
           {/* Images */}
-          {eventImages.map((image, index) => (
+          {eventImages.map((image: string, index: number) => (
             <div
               key={index}
               className={`absolute inset-0 transition-opacity duration-500 ${
@@ -414,7 +467,7 @@ export function EventDetail() {
 
               {/* Dot Indicators */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                {eventImages.map((_, index) => (
+                {eventImages.map((_: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
@@ -452,7 +505,7 @@ export function EventDetail() {
                   Rangkaian Acara:
                 </h4>
                 <ul className="space-y-2">
-                  {eventProgram.map((content, index) => (
+                  {eventProgram.map((content: string, index: number) => (
                     <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
                       <span className="text-[#E97DB4] mt-1">•</span>
                       <span>{content}</span>
@@ -472,14 +525,16 @@ export function EventDetail() {
                 <div>
                   <p className="text-xs text-gray-600">Tanggal</p>
                   <p className="font-medium">
-                    {eventData.date
-                      ? new Date(eventData.date).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })
-                      : 'Tanggal TBD'
-                    }
+                    {(() => {
+                      const eventDate = convertTimestamp(eventData.date);
+                      return eventDate
+                        ? eventDate.toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                        : 'Tanggal TBD';
+                    })()}
                   </p>
                 </div>
               </div>
@@ -488,24 +543,27 @@ export function EventDetail() {
                 <div>
                   <p className="text-xs text-gray-600">Waktu</p>
                   <p className="font-medium">
-                    {eventData.date
-                      ? new Date(eventData.date).toLocaleTimeString('id-ID', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      : 'Waktu TBD'
-                    }
+                    {eventData.startTime && eventData.endTime
+                      ? `${eventData.startTime} - ${eventData.endTime} WIB`
+                      : eventData.startTime
+                      ? `${eventData.startTime} WIB`
+                      : 'Waktu TBD'}
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <MapPinIcon className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0">
+                  <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                  <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
+                  <path d="M2 7h20"></path>
+                  <path d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"></path>
+                </svg>
                 <div>
-                  <p className="text-xs text-gray-600">Lokasi</p>
-                  <p className="font-medium">{eventData.location || 'Lokasi TBD'}</p>
-                  {eventData.address && (
-                    <p className="text-xs text-gray-500 mt-0.5">{eventData.address}</p>
-                  )}
+                  <p className="text-xs text-gray-600">Penyelenggara</p>
+                  <p className="font-medium">
+                    {eventData.outlet?.name || outletName || 'Nama Outlet'}
+                  </p>
                 </div>
               </div>
               {eventData.capacity && (
@@ -514,6 +572,11 @@ export function EventDetail() {
                   <div>
                     <p className="text-xs text-gray-600">Kapasitas</p>
                     <p className="font-medium">{eventData.capacity.toLocaleString('id-ID')} orang</p>
+                    {eventData.remainingTickets !== undefined && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Tersedia {eventData.remainingTickets.toLocaleString('id-ID')} tiket
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -523,14 +586,11 @@ export function EventDetail() {
             <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
               <h3 className="font-semibold text-gray-800 mb-3">Kategori Harga</h3>
               <div className="space-y-3">
-                {ticketCategories.map((cat, index) => (
+                {ticketCategories.map((cat: TicketCategory, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                     <div>
-                      <p className="font-bold text-[#800000]">{cat.name}</p>
+                      <p className="font-bold text-[#800000]">{cat.category || cat.name}</p>
                       <p className="text-xs text-gray-600">{cat.benefits}</p>
-                      {cat.available !== undefined && (
-                        <p className="text-xs text-gray-500">Tersedia {cat.available} tiket</p>
-                      )}
                     </div>
                     <p className="font-bold text-gray-800">
                       {cat.price ? `Rp ${cat.price.toLocaleString('id-ID')}` : 'Rp 0'}

@@ -202,7 +202,8 @@ export function AddEvent() {
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
-  return <div className="min-h-screen bg-gray-50">
+  return (
+    <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center px-4 py-3">
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
@@ -212,8 +213,7 @@ export function AddEvent() {
           <div className="w-9" />
         </div>
       </div>
-      <div className="px-4 py-6 pb-24">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="px-4 py-6 pb-24 space-y-4" id="event-form">
           {/* Multiple Image Upload */}
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -492,15 +492,16 @@ export function AddEvent() {
             </p>
           </div>
         </form>
-      </div>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-30">
         <button
           type="submit"
+          form="event-form"
           className="w-full bg-[#4A9B9B] text-white py-3 rounded-lg font-semibold hover:bg-[#3a8080] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           {loading ? 'Menyimpan...' : 'Simpan Event'}
         </button>
       </div>
-    </div>;
+    </div>
+  );
 }

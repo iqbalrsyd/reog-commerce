@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeftIcon, EditIcon, TrashIcon, CalendarIcon, MapPinIcon, UsersIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon, TicketIcon, XIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import api from '../lib/api';
+import { formatEventPrice } from '../lib/currency';
 
 export function EventDetail() {
   const navigate = useNavigate();
@@ -8,30 +10,109 @@ export function EventDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showTicketSelector, setShowTicketSelector] = useState(false);
-  const [selectedTickets, setSelectedTickets] = useState<{[key: string]: number}>({
-    'VIP': 0,
-    'Tribun': 0,
-    'Festival': 0
-  });
+  const [selectedTickets, setSelectedTickets] = useState<{[key: string]: number}>({});
+  const [loading, setLoading] = useState(true);
+  const [eventData, setEventData] = useState<any>(null);
 
   // Check if this is seller view (URL starts with /seller/)
   const isSellerView = window.location.pathname.startsWith('/seller/');
-  
-  // TODO: Fetch event data based on id
-  console.log('Event ID:', id);
 
-  // Event data (nanti akan diambil dari API berdasarkan id)
-  const eventData = {
-    name: 'Festival Grebeg Suro Ponorogo 2024',
-    date: '25 Februari 2024',
-    time: '19:00 - 23:00 WIB',
-    location: 'Alun-alun Ponorogo, Jawa Timur',
-    address: 'Jl. Alun-alun Utara, Kelurahan Tonatan, Ponorogo',
-    capacity: '1.000 orang',
-    remainingTickets: '350 tiket tersisa',
-    priceRange: 'Rp 50.000 - Rp 150.000',
-    startingPrice: 'Rp 50.000'
-  };
+  // Get outlet name from localStorage
+  const outlet = JSON.parse(localStorage.getItem('outlet') || '{}');
+  const outletName = outlet.name || 'Nama Outlet';
+
+  // Fetch event data
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        if (!id) return;
+
+        const response = await api.get(`/events/${id}`);
+        const event = response.data.data;
+
+        setEventData(event);
+
+        // Initialize selected tickets with all categories set to 0
+        if (event.ticketCategories && event.ticketCategories.length > 0) {
+          const initialTickets: {[key: string]: number} = {};
+          event.ticketCategories.forEach((tc: any) => {
+            initialTickets[tc.name] = 0;
+          });
+          setSelectedTickets(initialTickets);
+        }
+      } catch (error) {
+        console.error('Error fetching event:', error);
+        // For now, use dummy data as fallback
+        setEventData({
+          name: 'Festival Grebeg Suro Ponorogo 2024',
+          date: new Date('2024-02-25T19:00:00'),
+          location: 'Alun-alun Ponorogo, Jawa Timur',
+          address: 'Jl. Alun-alun Utara, Kelurahan Tonatan, Ponorogo',
+          capacity: 1000,
+          description: 'Festival Grebeg Suro adalah puncak perayaan tahun baru Islam di Ponorogo yang menampilkan kemegahan Reog Ponorogo.',
+          ticketCategories: [
+            { name: 'VIP', price: 150000, benefits: 'Kursi depan, meet & greet penari, merchandise', available: 100 },
+            { name: 'Tribun', price: 100000, benefits: 'Kursi tribun, view terbaik, merchandise', available: 300 },
+            { name: 'Festival', price: 50000, benefits: 'Standing area, free akses semua zona', available: 600 }
+          ],
+          images: [
+            'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800',
+            'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800',
+            'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800',
+            'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800'
+          ],
+          program: [
+            'Kirab Pusaka Reog Ponorogo dengan 100 penari',
+            'Penampilan Singo Barong dari berbagai sanggar terbaik',
+            'Tari Dadak Merak spektakuler dengan mahkota bulu merak 3 meter',
+            'Atraksi Bujang Ganong dan Warok tradisional',
+            'Pentas musik gamelan Jawa dan kendang Reog',
+            'Lomba Reog antar kecamatan se-Ponorogo',
+            'Pameran kerajinan topeng dan properti Reog',
+            'Bazar kuliner khas Ponorogo (Dawet Jabung, Sate Ponorogo, dll)'
+          ]
+        });
+
+        // Initialize with dummy categories
+        setSelectedTickets({
+          'VIP': 0,
+          'Tribun': 0,
+          'Festival': 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvent();
+  }, [id]);
+
+  // Get event images from fetched data or fallback
+  const eventImages = eventData?.images || [
+    'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800',
+    'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800',
+    'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800',
+    'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800'
+  ];
+
+  // Get ticket categories from fetched data or fallback
+  const ticketCategories = eventData?.ticketCategories || [
+    { name: 'VIP', price: 150000, benefits: 'Kursi depan, meet & greet penari, merchandise', available: 100 },
+    { name: 'Tribun', price: 100000, benefits: 'Kursi tribun, view terbaik, merchandise', available: 300 },
+    { name: 'Festival', price: 50000, benefits: 'Standing area, free akses semua zona', available: 600 }
+  ];
+
+  // Get program from fetched data or fallback
+  const eventProgram = eventData?.program || [
+    'Kirab Pusaka Reog Ponorogo dengan 100 penari',
+    'Penampilan Singo Barong dari berbagai sanggar terbaik',
+    'Tari Dadak Merak spektakuler dengan mahkota bulu merak 3 meter',
+    'Atraksi Bujang Ganong dan Warok tradisional',
+    'Pentas musik gamelan Jawa dan kendang Reog',
+    'Lomba Reog antar kecamatan se-Ponorogo',
+    'Pameran kerajinan topeng dan properti Reog',
+    'Bazar kuliner khas Ponorogo (Dawet Jabung, Sate Ponorogo, dll)'
+  ];
 
   // WhatsApp configuration
   const whatsappNumber = '6285136994744'; // Format: country code + number (no + or spaces)
@@ -39,20 +120,28 @@ export function EventDetail() {
   const handleWhatsAppContact = () => {
     // Check if user is logged in
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    
+
     if (!isLoggedIn) {
       setShowLoginPrompt(true);
       return;
     }
 
+    if (!eventData) return;
+
+    const formattedDate = eventData.date ?
+      new Date(eventData.date).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }) : 'Tanggal TBD';
+
     const message = `Halo, saya tertarik untuk memesan tiket event berikut:\n\n` +
                    `*${eventData.name}*\n` +
-                   `Tanggal: ${eventData.date}\n` +
-                   `Waktu: ${eventData.time}\n` +
-                   `Lokasi: ${eventData.location}\n` +
-                   `Harga: ${eventData.priceRange}\n\n` +
+                   `Tanggal: ${formattedDate}\n` +
+                   `Lokasi: ${eventData.location || 'Lokasi TBD'}\n` +
+                   `Harga: ${formatEventPrice(ticketCategories)}\n\n` +
                    `Apakah masih ada tiket yang tersedia?`;
-    
+
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -80,42 +169,44 @@ export function EventDetail() {
   const handleConfirmTickets = () => {
     // Check if at least one ticket is selected
     const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
-    
+
     if (totalTickets === 0) {
       alert('Pilih minimal 1 tiket!');
       return;
     }
 
+    if (!eventData) return;
+
     // Get existing cart from localStorage
     const existingCart = JSON.parse(localStorage.getItem('cart') || '{"products": [], "events": []}');
-    
+
     // Add each selected ticket category to cart
-    Object.entries(selectedTickets).forEach(([category, quantity]) => {
+    Object.entries(selectedTickets).forEach(([categoryName, quantity]) => {
       if (quantity > 0) {
-        const categoryData = pricingCategories.find(c => c.category === category);
+        const categoryData = ticketCategories.find(c => c.name === categoryName);
         if (!categoryData) return;
 
         const cartItem = {
-          id: `${id}-${category}`,
+          id: `${id}-${categoryName}`,
           eventId: id || '1',
           type: 'event',
           image: eventImages[0],
           title: eventData.name,
-          category: category,
-          price: categoryData.price,
-          priceNumber: parseInt(categoryData.price.replace(/\D/g, '')),
+          category: categoryName,
+          price: categoryData.price ? `Rp ${categoryData.price.toLocaleString('id-ID')}` : 'Rp 0',
+          priceNumber: categoryData.price || 0,
           quantity: quantity,
-          date: eventData.date,
-          time: eventData.time,
-          location: eventData.location,
+          date: eventData.date ? new Date(eventData.date).toLocaleDateString('id-ID') : 'Date TBD',
+          time: eventData.date ? new Date(eventData.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Time TBD',
+          location: eventData.location || 'Location TBD',
           benefits: categoryData.benefits
         };
 
         // Check if this exact category already exists in cart
-        const existingIndex = existingCart.events.findIndex((item: any) => 
+        const existingIndex = existingCart.events.findIndex((item: any) =>
           item.eventId === cartItem.eventId && item.category === cartItem.category
         );
-        
+
         if (existingIndex >= 0) {
           // Update quantity if exists
           existingCart.events[existingIndex].quantity += quantity;
@@ -128,26 +219,18 @@ export function EventDetail() {
 
     // Save to localStorage
     localStorage.setItem('cart', JSON.stringify(existingCart));
-    
+
     // Reset selections and close popup
-    setSelectedTickets({
-      'VIP': 0,
-      'Tribun': 0,
-      'Festival': 0
+    const resetTickets: {[key: string]: number} = {};
+    ticketCategories.forEach((tc: any) => {
+      resetTickets[tc.name] = 0;
     });
+    setSelectedTickets(resetTickets);
     setShowTicketSelector(false);
-    
+
     // Show notification
     alert('Tiket event berhasil ditambahkan ke keranjang!');
   };
-
-  // Array of event images
-  const eventImages = [
-    'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800',
-    'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=800',
-    'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800',
-    'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800'
-  ];
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % eventImages.length);
@@ -156,29 +239,17 @@ export function EventDetail() {
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + eventImages.length) % eventImages.length);
   };
-  const eventContents = [
-    'Kirab Pusaka Reog Ponorogo dengan 100 penari',
-    'Penampilan Singo Barong dari berbagai sanggar terbaik',
-    'Tari Dadak Merak spektakuler dengan mahkota bulu merak 3 meter',
-    'Atraksi Bujang Ganong dan Warok tradisional',
-    'Pentas musik gamelan Jawa dan kendang Reog',
-    'Lomba Reog antar kecamatan se-Ponorogo',
-    'Pameran kerajinan topeng dan properti Reog',
-    'Bazar kuliner khas Ponorogo (Dawet Jabung, Sate Ponorogo, dll)'
-  ];
-  const pricingCategories = [{
-    category: 'VIP',
-    price: 'Rp 150.000',
-    benefits: 'Kursi depan, meet & greet penari, merchandise'
-  }, {
-    category: 'Tribun',
-    price: 'Rp 100.000',
-    benefits: 'Kursi tribun, view terbaik, merchandise'
-  }, {
-    category: 'Festival',
-    price: 'Rp 50.000',
-    benefits: 'Standing area, free akses semua zona'
-  }];
+
+  if (loading || !eventData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#E97DB4] border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 font-medium">Memuat detail event...</p>
+        </div>
+      </div>
+    );
+  }
   return <div className="min-h-screen bg-gray-50">
       {/* Login Prompt Popup */}
       {showLoginPrompt && (
@@ -231,17 +302,24 @@ export function EventDetail() {
 
             {/* Ticket Categories */}
             <div className="p-4 space-y-3">
-              {pricingCategories.map((cat) => (
-                <div key={cat.category} className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
+              {ticketCategories.map((cat) => (
+                <div key={cat.name} className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-[#800000] text-lg">{cat.category}</p>
+                        <p className="font-bold text-[#800000] text-lg">{cat.name}</p>
                         <span className="text-xs bg-[#800000]/10 text-[#800000] px-2 py-0.5 rounded-full font-semibold">
                           {cat.benefits}
                         </span>
                       </div>
-                      <p className="font-bold text-gray-800 text-xl">{cat.price}</p>
+                      <p className="font-bold text-gray-800 text-xl">
+                        {cat.price ? `Rp ${cat.price.toLocaleString('id-ID')}` : 'Rp 0'}
+                      </p>
+                      {cat.available !== undefined && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Tersedia {cat.available} tiket
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -250,17 +328,17 @@ export function EventDetail() {
                     <span className="text-sm font-medium text-gray-600">Jumlah</span>
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => handleTicketQuantityChange(cat.category, -1)}
-                        disabled={selectedTickets[cat.category] === 0}
+                        onClick={() => handleTicketQuantityChange(cat.name, -1)}
+                        disabled={selectedTickets[cat.name] === 0}
                         className="w-8 h-8 rounded-full border-2 border-[#E97DB4] flex items-center justify-center hover:bg-[#E97DB4] hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current"
                       >
                         <MinusIcon className="w-4 h-4" />
                       </button>
                       <span className="w-12 text-center font-bold text-lg">
-                        {selectedTickets[cat.category] || 0}
+                        {selectedTickets[cat.name] || 0}
                       </span>
                       <button
-                        onClick={() => handleTicketQuantityChange(cat.category, 1)}
+                        onClick={() => handleTicketQuantityChange(cat.name, 1)}
                         className="w-8 h-8 rounded-full bg-[#E97DB4] text-white flex items-center justify-center hover:bg-[#d66b9f] transition-all"
                       >
                         <PlusIcon className="w-4 h-4" />
@@ -366,20 +444,23 @@ export function EventDetail() {
               Deskripsi Event
             </h3>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
-              Festival Grebeg Suro adalah puncak perayaan tahun baru Islam di Ponorogo yang menampilkan kemegahan Reog Ponorogo. 
-              Event tahunan ini menampilkan ratusan penari Reog dari berbagai sanggar di Ponorogo dan sekitarnya, dengan atraksi 
-              Singo Barong, Dadak Merak, Bujang Ganong, dan Warok. Acara ini merupakan ajang kompetisi sekaligus pelestarian 
-              budaya Reog yang telah diakui UNESCO sebagai warisan budaya takbenda Indonesia.
+              {eventData.description}
             </p>
-            <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-              Rangkaian Acara:
-            </h4>
-            <ul className="space-y-2">
-              {eventContents.map((content, index) => <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="text-[#E97DB4] mt-1">•</span>
-                  <span>{content}</span>
-                </li>)}
-            </ul>
+            {eventProgram.length > 0 && (
+              <>
+                <h4 className="font-semibold text-gray-800 mb-2 text-sm">
+                  Rangkaian Acara:
+                </h4>
+                <ul className="space-y-2">
+                  {eventProgram.map((content, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="text-[#E97DB4] mt-1">•</span>
+                      <span>{content}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
           <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
             <h3 className="font-semibold text-gray-800 mb-3">
@@ -390,46 +471,75 @@ export function EventDetail() {
                 <CalendarIcon className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-600">Tanggal</p>
-                  <p className="font-medium">{eventData.date}</p>
+                  <p className="font-medium">
+                    {eventData.date
+                      ? new Date(eventData.date).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })
+                      : 'Tanggal TBD'
+                    }
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <ClockIcon className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-600">Waktu</p>
-                  <p className="font-medium">{eventData.time}</p>
+                  <p className="font-medium">
+                    {eventData.date
+                      ? new Date(eventData.date).toLocaleTimeString('id-ID', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      : 'Waktu TBD'
+                    }
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <MapPinIcon className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-600">Lokasi</p>
-                  <p className="font-medium">{eventData.location}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{eventData.address}</p>
+                  <p className="font-medium">{eventData.location || 'Lokasi TBD'}</p>
+                  {eventData.address && (
+                    <p className="text-xs text-gray-500 mt-0.5">{eventData.address}</p>
+                  )}
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <UsersIcon className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-600">Kapasitas</p>
-                  <p className="font-medium">{eventData.capacity}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{eventData.remainingTickets}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-            <h3 className="font-semibold text-gray-800 mb-3">Kategori Harga</h3>
-            <div className="space-y-3">
-              {pricingCategories.map((cat, index) => <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              {eventData.capacity && (
+                <div className="flex items-start gap-3">
+                  <UsersIcon className="w-5 h-5 text-[#800000] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-bold text-[#800000]">{cat.category}</p>
-                    <p className="text-xs text-gray-600">{cat.benefits}</p>
+                    <p className="text-xs text-gray-600">Kapasitas</p>
+                    <p className="font-medium">{eventData.capacity.toLocaleString('id-ID')} orang</p>
                   </div>
-                  <p className="font-bold text-gray-800">{cat.price}</p>
-                </div>)}
+                </div>
+              )}
             </div>
           </div>
+          {ticketCategories.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <h3 className="font-semibold text-gray-800 mb-3">Kategori Harga</h3>
+              <div className="space-y-3">
+                {ticketCategories.map((cat, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div>
+                      <p className="font-bold text-[#800000]">{cat.name}</p>
+                      <p className="text-xs text-gray-600">{cat.benefits}</p>
+                      {cat.available !== undefined && (
+                        <p className="text-xs text-gray-500">Tersedia {cat.available} tiket</p>
+                      )}
+                    </div>
+                    <p className="font-bold text-gray-800">
+                      {cat.price ? `Rp ${cat.price.toLocaleString('id-ID')}` : 'Rp 0'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-30">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MailIcon, LockIcon, LogInIcon, UserPlusIcon, ArrowLeftIcon } from 'lucide-react';
+import { authService } from '../lib/auth.service'; // Import the auth service
 
 export function Login() {
   const navigate = useNavigate();
@@ -8,58 +9,50 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setLoading(true);
+
+    if (!email || !password) {
+      alert('Email dan password harus diisi!');
+      setLoading(false);
+      return;
+    }
+
     if (activeTab === 'signup') {
       if (password !== confirmPassword) {
         alert('Password tidak sama!');
+        setLoading(false);
         return;
       }
       if (password.length < 6) {
         alert('Password minimal 6 karakter!');
+        setLoading(false);
         return;
       }
-    }
-
-    if (!email || !password) {
-      alert('Email dan password harus diisi!');
+      // For signup, navigate to onboarding with credentials
+      navigate('/onboarding', { state: { email, password } });
+      setLoading(false);
       return;
     }
 
-    // Simpan auth info
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
-    
-    if (activeTab === 'signup') {
-      // Redirect to onboarding for new users
-      navigate('/onboarding');
-    } else {
-      // For login, check if user data exists
-      const savedUser = localStorage.getItem('userAccount');
-      if (savedUser) {
-        navigate('/profile');
-      } else {
-        // First time login, go to onboarding
-        navigate('/onboarding');
-      }
+    // Login logic
+    try {
+      await authService.login(email, password);
+
+      // Redirect to landing page after successful login
+      navigate('/', { replace: true });
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      alert(error.response?.data?.message || 'Login gagal. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleAuth = () => {
-    // Simulasi Google login
-    const googleEmail = 'user@gmail.com';
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', googleEmail);
-    
-    const savedUser = localStorage.getItem('userAccount');
-    if (savedUser) {
-      navigate('/profile');
-    } else {
-      navigate('/onboarding');
-    }
-  };
+  // Removed handleGoogleAuth as it's a simulation and not part of the current backend integration.
 
   return <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4">
       <div className="absolute inset-0 z-0" style={{
@@ -168,9 +161,12 @@ export function Login() {
 
             <button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-[#2E2557] via-[#4A9B9B] to-[#5B7B6F] text-white py-4 rounded-xl font-bold hover:shadow-2xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-[#2E2557] via-[#4A9B9B] to-[#5B7B6F] text-white py-4 rounded-xl font-bold hover:shadow-2xl transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
             >
-              {activeTab === 'login' ? (
+              {loading ? (
+                'Memproses...'
+              ) : activeTab === 'login' ? (
                 <>
                   <LogInIcon className="w-5 h-5" />
                   Masuk ke Akun
@@ -188,10 +184,11 @@ export function Login() {
               <div className="flex-1 h-px bg-gray-300" />
             </div>
 
+            {/* Google Auth Button (Placeholder for future implementation) */}
             <button 
               type="button" 
-              onClick={handleGoogleAuth}
-              className="w-full border-2 border-[#2E2557] text-[#2E2557] py-4 rounded-xl font-bold hover:bg-[#2E2557] hover:text-white transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3"
+              className="w-full border-2 border-[#2E2557] text-[#2E2557] py-4 rounded-xl font-bold hover:bg-[#2E2557] hover:text-white transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path

@@ -43,6 +43,8 @@ export function AppRouter() {
         <Route path="/seller/events" element={<EventList />} />
         <Route path="/seller/product/:id" element={<ProductDetail />} />
         <Route path="/seller/event/:id" element={<EventDetail />} />
+        <Route path="/add-product" element={<AddProduct />} />
+        <Route path="/add-event" element={<AddEvent />} />
         <Route path="/seller/add-product" element={<AddProduct />} />
         <Route path="/seller/add-event" element={<AddEvent />} />
         <Route path="/seller/analytics" element={<Analytics />} />

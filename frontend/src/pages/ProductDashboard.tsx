@@ -2,68 +2,158 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { ProductCard } from '../components/ProductCard';
 import { PackageIcon, ShoppingBagIcon, TrendingUpIcon, PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../lib/api';
+import { requireOutlet } from '../lib/session.utils';
+import { formatProductPrice } from '../lib/currency';
 
 export function ProductDashboard() {
   const navigate = useNavigate();
-  const outlet = JSON.parse(localStorage.getItem('outlet') || '{}');
+  const [outlet, setOutlet] = useState(JSON.parse(localStorage.getItem('outlet') || '{}'));
   const [activeCategory, setActiveCategory] = useState('Semua');
+  const [loading, setLoading] = useState(true);
+  const [outletProducts, setOutletProducts] = useState([]);
+  const [stats, setStats] = useState([
+    {
+      label: 'Total Produk',
+      value: '0',
+      icon: PackageIcon,
+      color: 'bg-[#E97DB4]',
+      description: 'di marketplace'
+    },
+    {
+      label: 'Produk Terbeli',
+      value: '0',
+      icon: ShoppingBagIcon,
+      color: 'bg-[#4A9B9B]',
+      description: 'transaksi sukses'
+    },
+    {
+      label: 'Total Penjualan',
+      value: 'Rp 0',
+      icon: TrendingUpIcon,
+      color: 'bg-[#5B7B6F]',
+      description: 'pendapatan'
+    },
+  ]);
 
   const productCategories = [
     'Semua',
     'Topeng',
-    'Kostum',
     'Wayang',
-    'Properti',
-    'Dadak Merak',
-    'Kendang'
+    'Kerajinan',
+    'Pakaian'
   ];
 
-  // Dummy data produk outlet (nanti akan diambil dari backend)
-  const outletProducts = [
-    {
-      image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
-      title: 'Topeng Singa Barong Premium',
-      price: 'Rp 2.5jt - Rp 3.5jt',
-      location: 'Ponorogo'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
-      title: 'Kostum Barongan Lengkap',
-      price: 'Rp 5.0jt - Rp 6.0jt',
-      location: 'Ponorogo'
+  // Fetch products from backend
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      if (!outlet.id) {
+        console.warn('No outlet found');
+        return;
+      }
+
+      const response = await api.get(`/products/outlet/${outlet.id}`);
+      const products = response.data.data || [];
+
+      // Transform products to match frontend format
+      const transformedProducts = products.map((product: any) => ({
+        id: product.id,
+        image: product.images?.[0] || 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
+        title: product.name,
+        price: formatProductPrice(product.price?.min || 0, product.price?.max),
+        location: outlet.location || 'Ponorogo',
+        category: product.category,
+        stock: product.stock,
+        views: product.stats?.views || 0,
+        likes: product.stats?.likes || 0,
+        sold: product.stats?.sold || 0,
+        rating: product.stats?.rating || 0,
+        description: product.description,
+        additionalInfo: product.additionalInfo,
+      }));
+
+      setOutletProducts(transformedProducts);
+
+      // Update stats
+      const totalProducts = products.length;
+      const totalSold = products.reduce((sum: number, product: any) => sum + (product.stats?.sold || 0), 0);
+      const totalRevenue = products.reduce((sum: number, product: any) => {
+        const avgPrice = (product.price?.min + (product.price?.max || product.price?.min)) / 2;
+        return sum + (avgPrice * (product.stats?.sold || 0));
+      }, 0);
+
+      setStats([
+        {
+          label: 'Total Produk',
+          value: totalProducts.toString(),
+          icon: PackageIcon,
+          color: 'bg-[#E97DB4]',
+          description: 'di marketplace'
+        },
+        {
+          label: 'Produk Terbeli',
+          value: totalSold.toString(),
+          icon: ShoppingBagIcon,
+          color: 'bg-[#4A9B9B]',
+          description: 'transaksi sukses'
+        },
+        {
+          label: 'Total Penjualan',
+          value: `Rp ${(totalRevenue / 1000000).toFixed(1)}jt`,
+          icon: TrendingUpIcon,
+          color: 'bg-[#5B7B6F]',
+          description: 'pendapatan'
+        },
+      ]);
+
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  // Stats data (nanti akan diambil dari backend/state management)
-  const stats = [
-    { 
-      label: 'Total Produk', 
-      value: '0', 
-      icon: PackageIcon, 
-      color: 'bg-[#E97DB4]',
-      description: 'di marketplace'
-    },
-    { 
-      label: 'Produk Terbeli', 
-      value: '0', 
-      icon: ShoppingBagIcon, 
-      color: 'bg-[#4A9B9B]',
-      description: 'transaksi sukses'
-    },
-    { 
-      label: 'Total Penjualan', 
-      value: 'Rp 0', 
-      icon: TrendingUpIcon, 
-      color: 'bg-[#5B7B6F]',
-      description: 'pendapatan'
-    },
-  ];
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      try {
+        // Check if user has outlet, if not redirect
+        const hasOutlet = await requireOutlet(navigate);
+        if (!hasOutlet) {
+          return;
+        }
+
+        // Update outlet state after potential fetch
+        const currentOutlet = JSON.parse(localStorage.getItem('outlet') || '{}');
+        setOutlet(currentOutlet);
+
+        fetchProducts();
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeDashboard();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#4A9B9B] border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 font-medium">Memuat dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       <Header />
-      
+
       <div className="px-4 py-6">
         {/* Welcome Card */}
         <div className="bg-gradient-to-br from-[#2E2557] to-[#4A4566] rounded-2xl p-6 shadow-lg mb-6 text-white">
@@ -100,7 +190,7 @@ export function ProductDashboard() {
         <div className="mb-6">
           <h2 className="text-lg font-bold text-[#2E2557] mb-4">Aksi Cepat</h2>
           <button
-            onClick={() => navigate('/seller/add-product')}
+            onClick={() => navigate('/add-product')}
             className="w-full bg-[#E97DB4] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all"
           >
             <div className="flex items-center gap-4">
@@ -151,8 +241,8 @@ export function ProductDashboard() {
           {/* Products Grid */}
           {outletProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-4">
-              {outletProducts.map((product, index) => (
-                <ProductCard key={index} {...product} />
+              {outletProducts.map((product: any, index: number) => (
+                <ProductCard key={product.id || index} {...product} />
               ))}
             </div>
           ) : (
@@ -165,7 +255,7 @@ export function ProductDashboard() {
                 Mulai tambahkan produk pertama Anda
               </p>
               <button
-                onClick={() => navigate('/seller/add-product')}
+                onClick={() => navigate('/add-product')}
                 className="bg-[#E97DB4] text-white px-6 py-2 rounded-full text-sm font-semibold hover:shadow-lg transition-all"
               >
                 Tambah Produk

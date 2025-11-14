@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeftIcon, EditIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, StoreIcon, ShoppingCartIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import api from '../lib/api';
+import { formatProductPrice } from '../lib/currency';
 
 export function ProductDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [productData, setProductData] = useState<any>(null);
 
   // Get outlet name from localStorage
   const outlet = JSON.parse(localStorage.getItem('outlet') || '{}');
@@ -14,23 +18,49 @@ export function ProductDetail() {
 
   // Check if this is seller view (URL starts with /seller/)
   const isSellerView = window.location.pathname.startsWith('/seller/');
-  
-  // TODO: Fetch product data based on id
-  console.log('Product ID:', id);
 
-  // Product data (nanti akan diambil dari API berdasarkan id)
-  const productData = {
-    name: 'Topeng Singa Barong Premium Ukir Kayu Mahoni',
-    price: 'Rp 3.200.000',
-    category: 'Topeng',
-    condition: 'Baru',
-    stock: 8,
-    material: 'Kayu Mahoni Pilihan',
-    size: '40 x 50 cm (Panjang x Lebar)',
-    weight: '3.5 kg',
-    origin: 'Desa Setono, Jenangan, Ponorogo',
-    description: 'Topeng Singa Barong adalah elemen paling ikonik dalam kesenian Reog Ponorogo. Topeng ini dibuat oleh pengrajin ahli dari Desa Setono yang telah mewarisi keahlian turun-temurun selama puluhan tahun. Diukir dari kayu mahoni pilihan dengan detail yang sangat teliti, topeng ini menggambarkan wajah singa yang gagah dengan ekspresi yang kuat. Dilengkapi dengan rambut dari ijuk hitam asli dan dihiasi dengan ornamen tradisional. Cocok untuk pertunjukan Reog, koleksi pribadi, atau hiasan interior dengan nilai seni tinggi.'
-  };
+  // Fetch product data
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        if (!id) return;
+
+        const response = await api.get(`/products/${id}`);
+        const product = response.data.data;
+
+        setProductData(product);
+      } catch (error) {
+        console.error('Error fetching product:', error);
+        // For now, use dummy data as fallback
+        setProductData({
+          name: 'Topeng Singa Barong Premium Ukir Kayu Mahoni',
+          price: { min: 3200000 },
+          category: 'Topeng',
+          condition: 'Baru',
+          stock: 8,
+          description: 'Topeng Singa Barong adalah elemen paling ikonik dalam kesenian Reog Ponorogo.',
+          additionalInfo: [
+            { label: 'Material', value: 'Kayu Mahoni Pilihan' },
+            { label: 'Ukuran', value: '40 x 50 cm (Panjang x Lebar)' },
+            { label: 'Berat', value: '3.5 kg' },
+            { label: 'Asal', value: 'Desa Setono, Jenangan, Ponorogo' }
+          ],
+          images: [
+            'https://imgs.search.brave.com/ilmeyRDzMht7VejfLizgAWfQHBnyFqx-F-GHBTzCU_4/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/aW5ld3MuY28uaWQv/bWVkaWEvMTA1MC9m/aWxlcy9pbmV3c19u/ZXcvMjAyMy8wOC8w/My9SZW9nX1Bvbm9y/b2dvLmpwZw',
+            'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800',
+            'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800',
+            'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800'
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  // Product data is now fetched and stored in productData state
 
   // WhatsApp configuration
   const whatsappNumber = '6285136994744'; // Format: country code + number (no + or spaces)
@@ -74,8 +104,8 @@ export function ProductDetail() {
       type: 'product',
       image: productImages[0],
       title: productData.name,
-      price: productData.price,
-      priceNumber: 3200000, // Nanti diambil dari backend
+      price: formatProductPrice(productData.price?.min || 0, productData.price?.max),
+      priceNumber: productData.price?.min || 0,
       quantity: 1,
       category: productData.category,
       seller: outletName
@@ -99,8 +129,8 @@ export function ProductDetail() {
     alert('Produk berhasil ditambahkan ke keranjang!');
   };
 
-  // Array of product images
-  const productImages = [
+  // Get product images from fetched data or fallback
+  const productImages = productData?.images || [
     'https://imgs.search.brave.com/ilmeyRDzMht7VejfLizgAWfQHBnyFqx-F-GHBTzCU_4/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/aW5ld3MuY28uaWQv/bWVkaWEvMTA1MC9m/aWxlcy9pbmV3c19u/ZXcvMjAyMy8wOC8w/My9SZW9nX1Bvbm9y/b2dvLmpwZw',
     'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800',
     'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800',
@@ -114,6 +144,17 @@ export function ProductDetail() {
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
   };
+  if (loading || !productData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#E97DB4] border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 font-medium">Memuat detail produk...</p>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="min-h-screen bg-gray-50">
       {/* Login Prompt Popup */}
       {showLoginPrompt && (
@@ -220,7 +261,9 @@ export function ProductDetail() {
           <h2 className="text-xl font-bold text-gray-800 mb-2">
             {productData.name}
           </h2>
-          <p className="text-2xl font-bold text-[#800000] mb-4">{productData.price}</p>
+          <p className="text-2xl font-bold text-[#800000] mb-4">
+            {formatProductPrice(productData.price?.min || 0, productData.price?.max)}
+          </p>
           <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
             <h3 className="font-semibold text-gray-800 mb-2">Deskripsi</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -251,22 +294,12 @@ export function ProductDetail() {
                 <span className="text-gray-600">Kategori</span>
                 <span className="font-medium">{productData.category}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Material</span>
-                <span className="font-medium">{productData.material}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Ukuran</span>
-                <span className="font-medium">{productData.size}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Berat</span>
-                <span className="font-medium">{productData.weight}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Asal</span>
-                <span className="font-medium">{productData.origin}</span>
-              </div>
+              {productData.additionalInfo?.map((info: any, index: number) => (
+                <div key={index} className="flex justify-between">
+                  <span className="text-gray-600">{info.label}</span>
+                  <span className="font-medium">{info.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

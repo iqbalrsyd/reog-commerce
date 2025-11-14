@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeftIcon, UploadIcon, XIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
 interface EventContent {
   id: string;
@@ -16,7 +17,23 @@ interface PricingCategory {
 
 export function AddEvent() {
   const navigate = useNavigate();
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Form data
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    category: '',
+    date: '',
+    startTime: '19:00',
+    endTime: '23:00',
+    locationName: '',
+    locationAddress: '',
+    capacity: ''
+  });
+
   const [eventContents, setEventContents] = useState<EventContent[]>([
     { id: '1', content: '' }
   ]);
@@ -27,13 +44,132 @@ export function AddEvent() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setImages(prev => [...prev, ...newImages].slice(0, 10));
+      const newFiles = Array.from(files);
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+
+      // Limit to 10 images
+      const remainingSlots = 10 - images.length;
+      const filesToAdd = newFiles.slice(0, remainingSlots);
+      const previewsToAdd = newPreviews.slice(0, remainingSlots);
+
+      setImages(prev => [...prev, ...filesToAdd]);
+      setImagePreviews(prev => [...prev, ...previewsToAdd]);
     }
   };
 
   const removeImage = (index: number) => {
+    // Clean up object URL
+    URL.revokeObjectURL(imagePreviews[index]);
+
     setImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Form input handler
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Form submission handler
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!formData.name.trim()) {
+      alert('Nama event harus diisi');
+      return;
+    }
+    if (!formData.date) {
+      alert('Tanggal event harus diisi');
+      return;
+    }
+    if (!formData.locationName.trim()) {
+      alert('Lokasi harus diisi');
+      return;
+    }
+    if (!formData.capacity || parseInt(formData.capacity) <= 0) {
+      alert('Kapasitas harus lebih dari 0');
+      return;
+    }
+    if (images.length === 0) {
+      alert('Minimal harus ada 1 foto event');
+      return;
+    }
+
+    // Check outlet
+    const outlet = JSON.parse(localStorage.getItem('outlet') || '{}');
+    if (!outlet.id) {
+      alert('Anda harus memiliki outlet untuk menambah event');
+      navigate('/create-outlet');
+      return;
+    }
+
+    // Validate pricing categories
+    const validPricingCategories = pricingCategories.filter(
+      cat => cat.category.trim() && cat.price && parseInt(cat.price) > 0
+    );
+
+    if (validPricingCategories.length === 0) {
+      alert('Minimal harus ada 1 kategori harga dengan harga yang valid');
+      return;
+    }
+
+    // Prepare event data
+    const eventData = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      category: formData.category || 'Festival',
+      date: formData.date,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: {
+        name: formData.locationName.trim(),
+        address: formData.locationAddress.trim(),
+        coordinates: null
+      },
+      capacity: parseInt(formData.capacity),
+      ticketCategories: validPricingCategories.map(cat => ({
+        category: cat.category.trim(),
+        price: parseInt(cat.price),
+        benefits: cat.benefits.trim(),
+        quota: Math.floor(parseInt(formData.capacity) / validPricingCategories.length) // Distribute capacity
+      })),
+      eventProgram: eventContents
+        .filter(content => content.content.trim())
+        .map(content => content.content.trim()),
+      outletId: outlet.id,
+      tags: [],
+    };
+
+    // Create FormData for file upload
+    const formDataToSubmit = new FormData();
+    formDataToSubmit.append('data', JSON.stringify(eventData));
+    images.forEach((image) => {
+      formDataToSubmit.append('images', image);
+    });
+
+    try {
+      setLoading(true);
+
+      const response = await api.post('/events', formDataToSubmit, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      alert('Event berhasil ditambahkan!');
+      navigate('/event-dashboard');
+    } catch (error: any) {
+      console.error('Error saving event:', error);
+      const errorMessage = error.response?.data?.message || 'Gagal menambahkan event. Silakan coba lagi.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addEventContent = () => {
@@ -77,7 +213,7 @@ export function AddEvent() {
         </div>
       </div>
       <div className="px-4 py-6 pb-24">
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Multiple Image Upload */}
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -85,12 +221,12 @@ export function AddEvent() {
             </label>
             
             {/* Image Preview Grid */}
-            {images.length > 0 && (
+            {imagePreviews.length > 0 && (
               <div className="grid grid-cols-3 gap-3 mb-3">
-                {images.map((image, index) => (
+                {imagePreviews.map((preview, index) => (
                   <div key={index} className="relative aspect-square">
                     <img
-                      src={image}
+                      src={preview}
                       alt={`Preview ${index + 1}`}
                       className="w-full h-full object-cover rounded-lg"
                     />
@@ -102,7 +238,7 @@ export function AddEvent() {
                       <XIcon className="w-4 h-4" />
                     </button>
                     {index === 0 && (
-                      <div className="absolute bottom-1 left-1 bg-[#E97DB4] text-white text-xs px-2 py-0.5 rounded">
+                      <div className="absolute bottom-1 left-1 bg-[#4A9B9B] text-white text-xs px-2 py-0.5 rounded">
                         Foto Utama
                       </div>
                     )}
@@ -136,8 +272,11 @@ export function AddEvent() {
             </label>
             <input
               type="text"
+              name="name"
               placeholder="Masukkan nama event"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
           </div>
 
@@ -147,10 +286,32 @@ export function AddEvent() {
               Deskripsi Event
             </label>
             <textarea
+              name="description"
               placeholder="Jelaskan event Anda"
               rows={4}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
+          </div>
+
+          {/* Category */}
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Kategori Event
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
+            >
+              <option value="">Pilih kategori</option>
+              <option value="Festival">Festival</option>
+              <option value="Pertunjukan">Pertunjukan</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Konser">Konser</option>
+            </select>
           </div>
 
           {/* Event Contents (Rangkaian Acara) */}
@@ -202,7 +363,10 @@ export function AddEvent() {
             </label>
             <input
               type="date"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              name="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
           </div>
 
@@ -212,7 +376,10 @@ export function AddEvent() {
             </label>
             <input
               type="time"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              name="startTime"
+              value={formData.startTime}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
           </div>
 
@@ -222,7 +389,10 @@ export function AddEvent() {
             </label>
             <input
               type="time"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              name="endTime"
+              value={formData.endTime}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
           </div>
 
@@ -233,13 +403,19 @@ export function AddEvent() {
             </label>
             <input
               type="text"
+              name="locationName"
               placeholder="Nama tempat (misal: Alun-alun Ponorogo)"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4] mb-3"
+              value={formData.locationName}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B] mb-3"
             />
             <input
               type="text"
+              name="locationAddress"
               placeholder="Alamat lengkap (misal: Jl. Alun-alun Utara No. 1)"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              value={formData.locationAddress}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
           </div>
 
@@ -250,8 +426,11 @@ export function AddEvent() {
             </label>
             <input
               type="number"
+              name="capacity"
               placeholder="Jumlah orang"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+              value={formData.capacity}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9B9B]"
             />
           </div>
 
@@ -315,8 +494,12 @@ export function AddEvent() {
         </form>
       </div>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-30">
-        <button className="w-full bg-[#E97DB4] text-white py-3 rounded-lg font-semibold hover:bg-[#d66b9f] transition-colors">
-          Simpan Event
+        <button
+          type="submit"
+          className="w-full bg-[#4A9B9B] text-white py-3 rounded-lg font-semibold hover:bg-[#3a8080] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+        >
+          {loading ? 'Menyimpan...' : 'Simpan Event'}
         </button>
       </div>
     </div>;

@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { CheckCircleIcon, UserIcon, MapPinIcon, TagIcon } from 'lucide-react';
+import { authService } from '../lib/auth.service'; // Import the auth service
 
 export function Onboarding() {
   const navigate = useNavigate();
+  const location = useLocation(); // Get location object to access state
+  const { email, password } = location.state || {}; // Extract email and password from state
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     origin: '',
     category: ''
   });
+  const [loading, setLoading] = useState(false);
 
   const categories = [
     { value: 'Mahasiswa', icon: '🎓', color: 'from-blue-500 to-blue-600' },
@@ -28,31 +33,41 @@ export function Onboarding() {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name || !formData.origin || !formData.category) {
       alert('Semua field harus diisi!');
       return;
     }
 
-    // Get email from localStorage
-    const email = localStorage.getItem('userEmail') || '';
+    if (!email || !password) {
+      alert('Email dan password tidak ditemukan. Silakan coba login/daftar ulang.');
+      navigate('/login'); // Redirect to login if credentials are missing
+      return;
+    }
 
-    // Save complete user account
-    const userAccount = {
-      name: formData.name,
-      email: email,
-      origin: formData.origin,
-      category: formData.category
-    };
+    setLoading(true);
+    try {
+      const registrationData = {
+        email,
+        password,
+        name: formData.name,
+        origin: formData.origin,
+        category: formData.category,
+        // phoneNumber can be added if collected in onboarding
+      };
 
-    localStorage.setItem('userAccount', JSON.stringify(userAccount));
-    localStorage.setItem('onboardingCompleted', 'true');
+      await authService.register(registrationData);
 
-    // Show success and redirect
-    setStep(4);
-    setTimeout(() => {
-      navigate('/profile');
-    }, 2000);
+      // Show success and redirect
+      setStep(4);
+      setTimeout(() => {
+        navigate('/profile');
+      }, 2000);
+    } catch (error: any) {
+      console.error('Registration failed:', error);
+      alert(error.response?.data?.message || 'Pendaftaran gagal. Silakan coba lagi.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -108,7 +123,7 @@ export function Onboarding() {
 
             <button
               onClick={() => formData.name && setStep(2)}
-              disabled={!formData.name}
+              disabled={!formData.name || loading}
               className="w-full bg-gradient-to-r from-[#4A9B9B] to-[#3a8080] text-white py-3.5 rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Lanjut
@@ -146,13 +161,14 @@ export function Onboarding() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-300 transition-all"
+                disabled={loading}
+                className="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Kembali
               </button>
               <button
                 onClick={() => formData.origin && setStep(3)}
-                disabled={!formData.origin}
+                disabled={!formData.origin || loading}
                 className="flex-1 bg-gradient-to-r from-[#4A9B9B] to-[#3a8080] text-white py-3.5 rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Lanjut
@@ -197,16 +213,17 @@ export function Onboarding() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(2)}
-                className="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-300 transition-all"
+                disabled={loading}
+                className="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Kembali
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!formData.category}
+                disabled={!formData.category || loading}
                 className="flex-1 bg-gradient-to-r from-[#4A9B9B] to-[#3a8080] text-white py-3.5 rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Selesai
+                {loading ? 'Mendaftar...' : 'Selesai'}
               </button>
             </div>
           </div>

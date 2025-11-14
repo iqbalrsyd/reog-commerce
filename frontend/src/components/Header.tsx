@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BellIcon, ShoppingCartIcon, UserIcon, MenuIcon, SearchIcon, StoreIcon, HomeIcon, PackageIcon, CalendarIcon, BarChartIcon, PlusCircleIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../lib/auth.service';
 interface HeaderProps {
   isSeller?: boolean;
   notificationCount?: number;
@@ -12,9 +13,16 @@ export function Header({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [outletType, setOutletType] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>('buyer');
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Get user data from auth service
+    const user = authService.getCurrentUser();
+    if (user) {
+      setUserRole(user.role || 'buyer');
+    }
+
     // Get outlet type from localStorage
     const outlet = localStorage.getItem('outlet');
     if (outlet) {
@@ -22,6 +30,10 @@ export function Header({
       setOutletType(outletData.type || '');
     }
   }, []);
+
+  // Check if user is logged in AND has outlet
+  const isLoggedIn = authService.isLoggedIn();
+  const hasOutlet = !!(localStorage.getItem('outlet') && localStorage.getItem('outlet') !== '{}');
 
   const publicMenuItems = [{
     label: 'Beranda',
@@ -139,7 +151,8 @@ export function Header({
     return baseItems;
   };
 
-  const menuItems = isSeller ? sellerMenuItems : publicMenuItems;
+  // Determine menu items based on user role
+  const menuItems = userRole === 'seller' ? sellerMenuItems : publicMenuItems;
   const outletMenuItems = getOutletMenuItems();
   return <>
       <header className="sticky top-0 z-50 bg-[#E97DB4] shadow-lg">
@@ -236,8 +249,8 @@ export function Header({
                 })}
               </nav>
 
-              {/* Menu Outlet - Only show if outlet exists */}
-              {outletMenuItems.length > 0 && (
+              {/* Menu Outlet - Only show if user is logged in AND has outlet */}
+              {isLoggedIn && hasOutlet && outletMenuItems.length > 0 && (
                 <>
                   <div className="my-6 border-t border-gray-200 pt-6">
                     <div className="flex items-center gap-2 mb-4">

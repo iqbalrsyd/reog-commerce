@@ -2,12 +2,18 @@ import { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { ProductCard } from '../components/ProductCard';
 import { EventCard } from '../components/EventCard';
+import api from '../lib/api';
+import { formatProductPrice, formatEventPrice } from '../lib/currency';
 export function Landing() {
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [events, setEvents] = useState([]);
+
   const productCategories = [
     'Semua',
     'Topeng',
@@ -15,8 +21,71 @@ export function Landing() {
     'Wayang',
     'Properti',
     'Dadak Merak',
-    'Kendang'
+    'Kendang',
+    'Kerajinan',
+    'Seni',
+    'Fashion',
+    'Kuliner'
   ];
+
+  // Fetch products and events from backend
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch products
+      const productsResponse = await api.get('/products?limit=8');
+      const productsData = productsResponse.data.data?.products || [];
+
+      // Transform products to match frontend format
+      const transformedProducts = productsData.map((product: any) => ({
+        id: product.id,
+        image: product.images?.[0] || 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
+        title: product.name,
+        price: formatProductPrice(product.price?.min || 0, product.price?.max),
+        category: product.category,
+        views: product.stats?.views || 0,
+        likes: product.stats?.likes || 0,
+        rating: product.stats?.rating || 0,
+        sold: product.stats?.sold || 0,
+      }));
+
+      // Fetch events
+      const eventsResponse = await api.get('/events?limit=4&status=upcoming');
+      const eventsData = eventsResponse.data.data?.events || [];
+
+      // Transform events to match frontend format
+      const transformedEvents = eventsData.map((event: any) => ({
+        id: event.id,
+        image: event.images?.[0] || 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
+        title: event.name,
+        price: formatEventPrice(event.ticketCategories || []),
+        location: event.location?.name || event.location || 'Ponorogo',
+        date: new Date(event.date).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        capacity: event.capacity,
+        interested: event.stats?.interested || 0,
+        views: event.stats?.views || 0,
+        rating: event.stats?.rating || 0,
+      }));
+
+      setProducts(transformedProducts);
+      setEvents(transformedEvents);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
   const heroSlides = [{
     title: 'Festival Reog Ponorogo 2024',
     subtitle: 'Grebeg Suro - Perayaan budaya terbesar Ponorogo',
@@ -69,93 +138,6 @@ export function Landing() {
     }
   };
   
-  const events = [{
-    id: 1,
-    image: 'https://imgs.search.brave.com/2rhctqGr9I4l4rD3jOihRii3k8FHjpVpv2sELIWTexc/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly93b25k/ZXJmdWxpbWFnZS5z/My1pZC1qa3QtMS5r/aWxhdHN0b3JhZ2Uu/aWQvMTY1OTI3NTE4/OS1mZXN0aXZhbC1y/ZW9nLXBvbm9yb2dv/LTIwMjItMzYtanBn/LXRodW1iLmpwZw',
-    title: 'Festival Grebeg Suro Ponorogo 2024',
-    price: 'Rp 50.000 - Rp 150.000',
-    location: 'Alun-alun Ponorogo',
-    date: '1 Suro 1946 (25 Feb 2024), 19:00 WIB'
-  }, {
-    id: 2,
-    image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
-    title: 'Pelatihan Tari Reog Tradisional',
-    price: 'Rp 250.000',
-    location: 'Sanggar Seni Wayang Kulit Ponorogo',
-    date: '10 Maret 2024, 08:00 - 16:00 WIB'
-  }, {
-    id: 3,
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
-    title: 'Pagelaran Wayang Kulit Semalam Suntuk',
-    price: 'Gratis',
-    location: 'Pendopo Kabupaten Ponorogo',
-    date: '17 Maret 2024, 20:00 - 05:00 WIB'
-  }, {
-    id: 4,
-    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
-    title: 'Workshop Pembuatan Topeng Reog',
-    price: 'Rp 300.000',
-    location: 'Desa Setono, Jenangan, Ponorogo',
-    date: '24 Maret 2024, 09:00 - 15:00 WIB'
-  }, {
-    id: 5,
-    image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400',
-    title: 'Pentas Seni Dadak Merak Festival',
-    price: 'Rp 75.000 - Rp 200.000',
-    location: 'Taman Thypoday Ponorogo',
-    date: '5 April 2024, 18:00 - 22:00 WIB'
-  }];
-  
-  const products = [{
-    id: 1,
-    image: 'https://imgs.search.brave.com/ilmeyRDzMht7VejfLizgAWfQHBnyFqx-F-GHBTzCU_4/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/aW5ld3MuY28uaWQv/bWVkaWEvMTA1MC9m/aWxlcy9pbmV3c19u/ZXcvMjAyMy8wOC8w/My9SZW9nX1Bvbm9y/b2dvLmpwZw',
-    title: 'Topeng Singa Barong Premium Ukir Kayu Mahoni',
-    price: 'Rp 3.200.000',
-    location: 'Desa Setono, Ponorogo'
-  }, {
-    id: 2,
-    image: 'https://imgs.search.brave.com/UEnlQcJytx2-PLEfv9Alvg4KqtHJdA2hEAtD1wEIVZg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZi5z/aG9wZWUuY28uaWQv/ZmlsZS9pZC0xMTEz/NDI3NS03cmJrOC1t/OXpkcjlreXExMmw5/MQ',
-    title: 'Dadak Merak Bulu Merak Asli 3 Meter',
-    price: 'Rp 8.500.000',
-    location: 'Desa Tegalsari, Ponorogo'
-  }, {
-    id: 3,
-    image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400',
-    title: 'Kostum Warok Lengkap (Baju + Celana Komprang)',
-    price: 'Rp 1.800.000',
-    location: 'Ponorogo Kota'
-  }, {
-    id: 4,
-    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
-    title: 'Topeng Bujang Ganong Kayu Jati',
-    price: 'Rp 2.500.000',
-    location: 'Desa Setono, Ponorogo'
-  }, {
-    id: 5,
-    image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400',
-    title: 'Kuda Kepang Jathilan Set Lengkap (4 Kuda)',
-    price: 'Rp 6.000.000',
-    location: 'Jenangan, Ponorogo'
-  }, {
-    id: 6,
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400',
-    title: 'Kendang Reog Kulit Sapi Asli',
-    price: 'Rp 1.200.000',
-    location: 'Babadan, Ponorogo'
-  }, {
-    id: 7,
-    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
-    title: 'Barongsai Mini untuk Anak-anak',
-    price: 'Rp 950.000',
-    location: 'Ponorogo Kota'
-  }, {
-    id: 8,
-    image: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=400',
-    title: 'Angklung Reog Set 8 Nada',
-    price: 'Rp 1.500.000',
-    location: 'Mlarak, Ponorogo'
-  }];
-  
   return <div className="min-h-screen bg-[#F5F5F5]">
       <Header notificationCount={2} />
       <div className="relative">
@@ -189,27 +171,41 @@ export function Landing() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-[#2E2557]">Event Mendatang</h3>
-            {!showAllEvents && events.length > 1 && (
-              <button 
-                onClick={() => setShowAllEvents(true)}
-                className="text-sm text-[#E97DB4] font-semibold hover:text-[#d66b9f] transition-colors"
-              >
-                Lihat Lebih Banyak →
-              </button>
-            )}
-            {showAllEvents && (
-              <button 
-                onClick={() => setShowAllEvents(false)}
-                className="text-sm text-[#E97DB4] font-semibold hover:text-[#d66b9f] transition-colors"
-              >
-                Lihat Lebih Sedikit ←
-              </button>
+            {!loading && events.length > 1 && (
+              <>
+                {!showAllEvents ? (
+                  <button
+                    onClick={() => setShowAllEvents(true)}
+                    className="text-sm text-[#E97DB4] font-semibold hover:text-[#d66b9f] transition-colors"
+                  >
+                    Lihat Lebih Banyak →
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowAllEvents(false)}
+                    className="text-sm text-[#E97DB4] font-semibold hover:text-[#d66b9f] transition-colors"
+                  >
+                    Lihat Lebih Sedikit ←
+                  </button>
+                )}
+              </>
             )}
           </div>
           <div className="space-y-3">
-            {(showAllEvents ? events : [events[0]]).map((event, index) => (
-              <EventCard key={index} {...event} />
-            ))}
+            {loading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E97DB4] mx-auto"></div>
+                <p className="text-sm text-gray-500 mt-2">Memuat data...</p>
+              </div>
+            ) : events.length > 0 ? (
+              (showAllEvents ? events : [events[0]]).map((event, index) => (
+                <EventCard key={`${event.id}-${index}`} {...event} />
+              ))
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm">Belum ada event mendatang</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -239,9 +235,25 @@ export function Landing() {
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4 pb-6">
-          {products.map((product, index) => <ProductCard key={index} {...product} />)}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4 pb-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
+                <div className="aspect-square bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4 pb-6">
+            {products.map((product, index) => <ProductCard key={`${product.id}-${index}`} {...product} />)}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl p-8 text-center shadow-sm mb-6">
+            <p className="text-gray-500 text-sm">Belum ada produk tersedia</p>
+          </div>
+        )}
       </div>
     </div>;
 }

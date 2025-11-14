@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeftIcon, UploadIcon, XIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
 interface ProductInfo {
   id: string;
@@ -10,9 +11,15 @@ interface ProductInfo {
 
 export function AddProduct() {
   const navigate = useNavigate();
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreview, setImagePreview] = useState<string[]>([]);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [stock, setStock] = useState('');
+  const [loading, setLoading] = useState(false);
   const [productInfo, setProductInfo] = useState<ProductInfo[]>([
     { id: '1', label: 'Ukuran', value: '' },
     { id: '2', label: 'Material', value: '' },
@@ -22,13 +29,19 @@ export function AddProduct() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setImages(prev => [...prev, ...newImages]);
+      const newFiles = Array.from(files);
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+      setImages(prev => [...prev, ...newFiles]);
+      setImagePreview(prev => [...prev, ...newPreviews]);
     }
   };
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreview(prev => {
+      URL.revokeObjectURL(prev[index]); // Clean up object URL
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const addProductInfo = () => {
@@ -51,6 +64,89 @@ export function AddProduct() {
       prev.map(info => (info.id === id ? { ...info, value } : info))
     );
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validasi
+    if (!name.trim()) {
+      alert('Nama produk harus diisi');
+      return;
+    }
+    if (!priceMin) {
+      alert('Harga minimum harus diisi');
+      return;
+    }
+    if (images.length === 0) {
+      alert('Minimal harus ada 1 foto produk');
+      return;
+    }
+
+    // Get outlet data
+    const outlet = JSON.parse(localStorage.getItem('outlet') || '{}');
+    if (!outlet.id) {
+      alert('Anda harus memiliki outlet untuk menambah produk');
+      navigate('/create-outlet');
+      return;
+    }
+
+    // Filter productInfo yang sudah diisi
+    const validProductInfo = productInfo.filter(
+      info => info.label.trim() && info.value.trim()
+    );
+
+    if (validProductInfo.length === 0) {
+      alert('Minimal harus ada 1 informasi produk');
+      return;
+    }
+
+    // Prepare data sesuai schema backend
+    const productData = {
+      name: name.trim(),
+      description: description.trim(),
+      category: category || 'Kerajinan',
+      price: {
+        min: parseInt(priceMin),
+        ...(priceMax && priceMax !== '' ? { max: parseInt(priceMax) } : {})
+      },
+      stock: parseInt(stock) || 0,
+      additionalInfo: validProductInfo.map(info => ({
+        label: info.label.trim(),
+        value: info.value.trim()
+      })),
+      condition: 'Baru',
+      outletId: outlet.id,
+      tags: [],
+    };
+
+    // Create FormData untuk upload images
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(productData));
+    images.forEach((image) => {
+      formData.append('images', image);
+    });
+
+    try {
+      setLoading(true);
+
+      // Call backend API
+      const response = await api.post('/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      alert('Produk berhasil ditambahkan!');
+      navigate('/product-dashboard');
+    } catch (error: any) {
+      console.error('Error saving product:', error);
+      const errorMessage = error.response?.data?.message || 'Gagal menambahkan produk. Silakan coba lagi.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center px-4 py-3">
@@ -62,7 +158,7 @@ export function AddProduct() {
         </div>
       </div>
       <div className="px-4 py-6 pb-24">
-        <form className="space-y-4">
+        <form id="product-form" className="space-y-4" onSubmit={handleSubmit}>
           {/* Upload Multiple Images */}
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -70,12 +166,12 @@ export function AddProduct() {
             </label>
             
             {/* Image Preview Grid */}
-            {images.length > 0 && (
+            {imagePreview.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-3">
-                {images.map((image, index) => (
+                {imagePreview.map((preview, index) => (
                   <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
                     <img
-                      src={image}
+                      src={preview}
                       alt={`Product ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -97,7 +193,7 @@ export function AddProduct() {
             )}
 
             {/* Upload Button */}
-            {images.length < 10 && (
+            {imagePreview.length < 10 && (
               <label className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#E97DB4] transition-colors cursor-pointer">
                 <input
                   type="file"
@@ -108,10 +204,10 @@ export function AddProduct() {
                 />
                 <UploadIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600">
-                  {images.length === 0 ? 'Klik untuk upload foto' : 'Tambah foto lainnya'}
+                  {imagePreview.length === 0 ? 'Klik untuk upload foto' : 'Tambah foto lainnya'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {images.length} / 10 foto
+                  {imagePreview.length} / 10 foto
                 </p>
               </label>
             )}
@@ -120,13 +216,25 @@ export function AddProduct() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Nama Produk
             </label>
-            <input type="text" placeholder="Masukkan nama produk" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]" />
+            <input 
+              type="text" 
+              placeholder="Masukkan nama produk" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]" 
+            />
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Deskripsi
             </label>
-            <textarea placeholder="Jelaskan produk Anda" rows={4} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]" />
+            <textarea 
+              placeholder="Jelaskan produk Anda" 
+              rows={4} 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]" 
+            />
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -162,19 +270,30 @@ export function AddProduct() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Kategori
             </label>
-            <select className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]">
-              <option>Pilih kategori</option>
-              <option>Kerajinan</option>
-              <option>Seni</option>
-              <option>Fashion</option>
-              <option>Kuliner</option>
+            <select 
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]"
+            >
+              <option value="">Pilih kategori</option>
+              <option value="Kerajinan">Kerajinan</option>
+              <option value="Topeng">Topeng</option>
+              <option value="Pakaian">Pakaian</option>
+              <option value="Wayang">Wayang</option>
             </select>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Stok
             </label>
-            <input type="number" placeholder="0" className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]" />
+            <input 
+              type="number" 
+              placeholder="0" 
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              min="0"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#E97DB4]" 
+            />
           </div>
 
           {/* Dynamic Product Information */}
@@ -234,8 +353,13 @@ export function AddProduct() {
         </form>
       </div>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-30">
-        <button className="w-full bg-[#E97DB4] text-white py-3 rounded-lg font-semibold hover:bg-[#d66b9f] transition-colors">
-          Simpan Produk
+        <button
+          type="submit"
+          form="product-form"
+          className="w-full bg-[#E97DB4] text-white py-3 rounded-lg font-semibold hover:bg-[#d66b9f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+        >
+          {loading ? 'Menyimpan...' : 'Simpan Produk'}
         </button>
       </div>
     </div>;

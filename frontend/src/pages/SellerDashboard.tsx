@@ -1,29 +1,53 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
 export function SellerDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user has created an outlet
-    const outletData = localStorage.getItem('outlet');
-    
-    if (!outletData || outletData === '{}') {
-      // No outlet created, redirect to create outlet page
-      navigate('/create-outlet');
-      return;
-    }
+    const checkOutletAndRedirect = async () => {
+      try {
+        // First check if outlet data exists in localStorage
+        let outletData = localStorage.getItem('outlet');
 
-    // Parse outlet data
-    const outlet = JSON.parse(outletData);
-    
-    // Redirect based on outlet type
-    if (outlet.type === 'event') {
-      navigate('/event-dashboard');
-    } else {
-      // Default to product dashboard for 'produk' or 'keduanya'
-      navigate('/product-dashboard');
-    }
+        if (!outletData || outletData === '{}') {
+          // No outlet in localStorage, fetch from backend
+          const response = await api.get('/outlets/my');
+          const outlets = response.data.data || [];
+
+          if (outlets.length > 0) {
+            // User has outlet(s), store the first one in localStorage
+            const primaryOutlet = outlets[0];
+            localStorage.setItem('outlet', JSON.stringify(primaryOutlet));
+            outletData = JSON.stringify(primaryOutlet);
+          }
+        }
+
+        if (!outletData || outletData === '{}') {
+          // No outlet created, redirect to create outlet page
+          navigate('/create-outlet');
+          return;
+        }
+
+        // Parse outlet data
+        const outlet = JSON.parse(outletData);
+
+        // Redirect based on outlet type
+        if (outlet.type === 'event') {
+          navigate('/event-dashboard');
+        } else {
+          // Default to product dashboard for 'produk' or 'keduanya'
+          navigate('/product-dashboard');
+        }
+      } catch (error) {
+        console.error('Error checking outlet status:', error);
+        // On error, redirect to create outlet page as fallback
+        navigate('/create-outlet');
+      }
+    };
+
+    checkOutletAndRedirect();
   }, [navigate]);
 
   // Show loading state while redirecting

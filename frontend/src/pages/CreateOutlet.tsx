@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { StoreIcon, MapPinIcon, PhoneIcon, FileTextIcon } from 'lucide-react';
+import api from '../lib/api'; // Import the API client
+import { authService } from '../lib/auth.service'; // Import auth service
 
 export function CreateOutlet() {
   const navigate = useNavigate();
@@ -12,19 +14,38 @@ export function CreateOutlet() {
     location: '',
     contact: ''
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simpan data outlet (untuk sementara di localStorage)
-    localStorage.setItem('outlet', JSON.stringify(formData));
-    // Redirect ke dashboard yang sesuai berdasarkan tipe
-    if (formData.type === 'produk') {
-      navigate('/product-dashboard');
-    } else if (formData.type === 'event') {
-      navigate('/event-dashboard');
-    } else {
-      // Default to product dashboard for 'keduanya'
-      navigate('/product-dashboard');
+    setLoading(true);
+
+    try {
+      const response = await api.post('/outlets', formData);
+      const outlet = response.data.data;
+
+      // Store outlet data in localStorage
+      localStorage.setItem('outlet', JSON.stringify(outlet));
+
+      // Update user role to seller in auth service and localStorage
+      await authService.updateUserData({ role: 'seller' });
+
+      alert('Outlet berhasil dibuat! Anda sekarang adalah penjual.');
+
+      // Redirect ke dashboard yang sesuai berdasarkan tipe
+      if (formData.type === 'produk') {
+        navigate('/product-dashboard');
+      } else if (formData.type === 'event') {
+        navigate('/event-dashboard');
+      } else {
+        // Default to product dashboard for 'keduanya'
+        navigate('/product-dashboard');
+      }
+    } catch (error: any) {
+      console.error('Failed to create outlet:', error);
+      alert(error.response?.data?.message || 'Gagal membuat outlet. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,9 +162,10 @@ export function CreateOutlet() {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full bg-[#E97DB4] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:bg-[#d66b9f]"
+              className="w-full bg-[#E97DB4] text-white py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:bg-[#d66b9f] disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
             >
-              Buat Outlet
+              {loading ? 'Membuat Outlet...' : 'Buat Outlet'}
             </button>
           </div>
         </form>

@@ -30,20 +30,27 @@ export function AccountInfo() {
 
   useEffect(() => {
     // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
       alert('Silakan login terlebih dahulu');
       navigate('/profile');
       return;
     }
 
     // Load user data from localStorage
-    const savedUser = localStorage.getItem('userAccount');
-    if (savedUser) {
-      setUserData(JSON.parse(savedUser));
-    } else {
-      // No user data, redirect to onboarding
-      navigate('/onboarding');
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserData({
+          name: user.name || '',
+          email: user.email || '',
+          origin: user.origin || '',
+          category: user.category || ''
+        });
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+      }
     }
   }, [navigate]);
 

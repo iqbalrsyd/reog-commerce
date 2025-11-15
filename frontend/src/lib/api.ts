@@ -1,20 +1,23 @@
 
 import axios from 'axios';
 
-// Debug environment variables in development
-if (import.meta.env.DEV) {
-  console.log('🔧 API Configuration:');
-  console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
-  console.log('Mode:', import.meta.env.MODE);
-}
+// Determine API URL based on environment
+const getApiUrl = () => {
+  // Development
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  }
+  
+  // Production - langsung hardcode untuk memastikan
+  return 'https://reog-commerce-be.vercel.app/api';
+};
 
-// Fallback untuk production jika env variable tidak tersedia
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://reog-commerce-be.vercel.app/api';
+const API_BASE_URL = getApiUrl();
 
-// Log di production untuk debugging
-if (import.meta.env.PROD) {
-  console.log('🚀 Production API URL:', API_BASE_URL);
-}
+// Log untuk debugging
+console.log('🚀 API URL:', API_BASE_URL);
+console.log('📍 Mode:', import.meta.env.MODE);
+console.log('� VITE_API_URL env:', import.meta.env.VITE_API_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,

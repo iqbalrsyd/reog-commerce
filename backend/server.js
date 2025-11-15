@@ -7,15 +7,13 @@ dotenv.config();
 // Get port from environment variable or use default
 const PORT = process.env.PORT || 5000;
 
-// Start server (only in development)
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 API URL: http://localhost:${PORT}/api`);
-    console.log(`❤️  Health check: http://localhost:${PORT}/health`);
-  });
-}
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 API URL: http://localhost:${PORT}/api`);
+  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

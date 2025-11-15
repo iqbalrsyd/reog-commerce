@@ -68,8 +68,10 @@ export const authService = {
       }
 
       try {
-        // Configure Google Sign-In
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        // Get Google Client ID - hardcode untuk production jika env tidak tersedia
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '114013587667-rhn3k0vioo9qelnumb21aodbv13r21o4.apps.googleusercontent.com';
+        
+        console.log('🔐 Google Client ID:', clientId);
         
         if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
           reject(new Error('Google Client ID belum dikonfigurasi. Silakan setup di .env file.'));
@@ -83,6 +85,8 @@ export const authService = {
               // Decode JWT token to get user info
               const credential = response.credential;
               const payload = JSON.parse(atob(credential.split('.')[1]));
+
+              console.log('✅ Google Sign-In success:', payload.email);
 
               // Send to backend
               const backendResponse = await api.post('/auth/google-signin', {
@@ -102,7 +106,7 @@ export const authService = {
 
               resolve({ user, token, isNewUser });
             } catch (error: any) {
-              console.error('Google Sign-In backend error:', error);
+              console.error('❌ Google Sign-In backend error:', error);
               reject(error);
             }
           },
@@ -111,10 +115,11 @@ export const authService = {
         // Show Google One Tap or render button
         window.google.accounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            console.log('One Tap not displayed, will use button instead');
+            console.log('ℹ️ One Tap not displayed, will use button instead');
           }
         });
       } catch (error) {
+        console.error('❌ Google Sign-In initialization error:', error);
         reject(error);
       }
     });
